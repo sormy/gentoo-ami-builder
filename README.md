@@ -148,6 +148,7 @@ Recommendation is to add extra actions needed for target image into phase 3 scri
 - test all gentoo profiles, blacklist unsupported
 - submit ena ebuild to gentoo and remove local overlay step
 - better ssh connection wait function (see below)
+- cover by unit tests
 
 ```shell
  *   Waiting until SSH will be up...

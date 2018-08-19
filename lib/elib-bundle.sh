@@ -90,6 +90,7 @@ $(
         elog_enable_colors \
         elog_disable_colors \
         elog_set_colors \
+        ecmd \
         eexec \
         qexec \
         find_device \

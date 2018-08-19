@@ -24,14 +24,14 @@ einfo() {
     # global ELOG_INDENT
     # global ELOG_GREEN_COLOR
     # global ELOG_RESET_COLOR
-    echo "$ELOG_GREEN_COLOR *$ELOG_RESET_COLOR$ELOG_INDENT" "$@"
+    echo " $ELOG_GREEN_COLOR*$ELOG_RESET_COLOR$ELOG_INDENT" "$@"
 }
 
 eerror() {
     # global ELOG_INDENT
     # global ELOG_RED_COLOR
     # global ELOG_RESET_COLOR
-    echo "$ELOG_RED_COLOR *$ELOG_RESET_COLOR$ELOG_INDENT" "$@" >&2
+    echo " $ELOG_RED_COLOR*$ELOG_RESET_COLOR$ELOG_INDENT" "$@" >&2
 }
 
 eecho() {
@@ -77,6 +77,20 @@ elog_set_colors() {
     is_on "$1" && elog_enable_colors || elog_disable_colors
 }
 
+# print command in human readable form with option to paste in terminal and run
+ecmd() {
+    local cmd
+    local arg
+    for arg in "$@"; do
+        if echo "$arg" | grep -q '["`$\\[:space:]]'; then
+            cmd="$cmd \"$(echo "$arg" | sed -e 's/\(["`$\\]\)/\\\1/g')\""
+        else
+            cmd="$cmd $arg"
+        fi
+    done
+    echo "${cmd:1}"
+}
+
 # quietly execute the process, ignore output and all errors
 qexec() {
     "$@" > /dev/null 2>&1 || true
@@ -107,13 +121,7 @@ eexec() {
         fi
     else
         error_code="$?"
-
-        local cmd
-        local arg
-        for arg in "$@"; do cmd="$cmd \"$arg\""; done
-        cmd="${cmd:1}"
-
-        eerror "Process has failed with error code $error_code: $cmd"
+        eerror "Process has failed with error code $error_code: $(ecmd "$@")"
         cat "$output_file" \
             | sed -e 's/^/'"$ELOG_INDENT   $ELOG_YELLOW_COLOR>$ELOG_RESET_COLOR "'/' \
             >&2
