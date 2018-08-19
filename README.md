@@ -3,17 +3,18 @@
 ## Features
 
 - One line command to create bootable Gentoo AMI images.
-- Has all needed block device drivers to boot instance (NVMe).
-- Has all needed network drivers to have networ after boot (IXGBEVF, ENA).
-- Minimalistic, only mandatory packages are installes to get bootable system,
-  that eats just ~50 MB of RAM after boot.
-- Has minimalistic amazon-ec2-init script that could bootrap hostname and ssh keys.
+- Has all needed block device drivers to boot instance (NVMe etc).
+- Has all needed network drivers to have network after boot (IXGBEVF, ENA etc).
+- Minimalistic, only mandatory packages are installed to get bootable system.
+  System eats just ~50 MB of RAM after boot.
+- Has minimalistic amazon-ec2-init script that could bootstrap hostname and ssh keys.
 - Uses amazon-provided kernel config as basis.
-- Build time is less than 30 minutes (on 8 cores instance).
+- Build time is around 30-40 minutes (on 8 cores instance).
 - Highly customizable, open source and free :-)
 - Nice progress reporting with advanced error handling.
 - No other dependencies besides aws cli.
-- Usign modern HVM virtualization type instead of PVM.
+- Supports HVM virtualization type (PVM is not supported).
+- Supports all types of instances.
 
 ## Prerequisites
 
