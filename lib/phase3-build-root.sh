@@ -99,13 +99,13 @@ END
 
 einfo "Installing bootloader..."
 
-eexec emerge $EMERGE_OPTS sys-boot/grub
-
 cat >> /etc/portage/make.conf << END
 
 # added by gentoo ami builder
 GRUB_PLATFORMS="$GRUB_PLATFORMS"
 END
+
+eexec emerge $EMERGE_OPTS sys-boot/grub
 
 cat >> /etc/default/grub << END
 
