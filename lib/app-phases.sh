@@ -202,7 +202,7 @@ show_phase4_switch_root() {
 
     einfo "Rebooting..."
 
-    if is_on "$PAUSE_BEFORE_REBOOT"; then
+    if eon "$PAUSE_BEFORE_REBOOT"; then
         signal
         press_any_key_to_continue
     fi
@@ -241,7 +241,7 @@ show_phase5_migrate_boot() {
 
     einfo "Rebooting..."
 
-    if is_on "$PAUSE_BEFORE_REBOOT"; then
+    if eon "$PAUSE_BEFORE_REBOOT"; then
         signal
         press_any_key_to_continue
     fi

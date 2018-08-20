@@ -79,8 +79,8 @@ $(
 )
 $(
     bundle_func_list \
-        is_on \
-        is_off \
+        eon \
+        eoff \
         einfo \
         eerror \
         eecho \
@@ -92,7 +92,7 @@ $(
         elog_set_colors \
         ecmd \
         eexec \
-        qexec \
+        eqexec \
         find_device \
         append_disk_part \
         find_disk1 \

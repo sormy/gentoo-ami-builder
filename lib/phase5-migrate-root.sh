@@ -19,10 +19,10 @@ DISK2P1=$(append_disk_part $DISK2 1)
 if mount | grep -q /mnt/gentoo; then
     einfo "Unmounting partitions..."
 
-    qexec umount /mnt/gentoo/dev/pts
-    qexec umount /mnt/gentoo/dev
-    qexec umount /mnt/gentoo/sys
-    qexec umount /mnt/gentoo/proc
+    eqexec umount /mnt/gentoo/dev/pts
+    eqexec umount /mnt/gentoo/dev
+    eqexec umount /mnt/gentoo/sys
+    eqexec umount /mnt/gentoo/proc
 
     eexec umount /mnt/gentoo
 fi
@@ -35,7 +35,7 @@ eindent
 
 einfo "Creating partitions..."
 
-echo ";" | qexec sfdisk --label dos "$DISK1"
+echo ";" | eqexec sfdisk --label dos "$DISK1"
 while [ ! -e $DISK1P1 ]; do sleep 1; done
 
 einfo "Formatting partitions..."

@@ -12,12 +12,12 @@ ELOG_YELLOW_COLOR=""
 
 ELOG_INDENT=""
 
-is_on() {
+eon() {
     echo "$1" | grep -q -i '^\(1\|yes\|true\|on\)$'
 }
 
-is_off() {
-    ! is_on "$1"
+eoff() {
+    ! eon "$1"
 }
 
 einfo() {
@@ -74,7 +74,11 @@ elog_disable_colors() {
 }
 
 elog_set_colors() {
-    is_on "$1" && elog_enable_colors || elog_disable_colors
+    if eon "$1"; then
+        elog_enable_colors
+    else
+        elog_disable_colors
+    fi
 }
 
 # print command in human readable form with option to paste in terminal and run
@@ -92,7 +96,7 @@ ecmd() {
 }
 
 # quietly execute the process, ignore output and all errors
-qexec() {
+eqexec() {
     "$@" > /dev/null 2>&1 || true
 }
 

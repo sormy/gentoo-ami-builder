@@ -15,7 +15,7 @@ app_exit_trap() {
 
     eindent_reset
 
-    if is_on "$TERMINATE_ON_FAILURE" && [ -n "$EC2_INSTANCE_ID" ]; then
+    if eon "$TERMINATE_ON_FAILURE" && [ -n "$EC2_INSTANCE_ID" ]; then
         if [ "$(get_instance_state $EC2_INSTANCE_ID)" = "running" ]; then
             einfo "Terminating instance..."
             terminate_instance "$EC2_INSTANCE_ID"

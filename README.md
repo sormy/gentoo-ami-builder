@@ -78,7 +78,7 @@ theoretically compatible with EC2 hardware as of 2018-08-12 are:
 - **x86**: i686-uclibc-vanilla
 - **x86**: i686
 
-## Tested Configuration
+## Tested Configurations
 
 - amd64 / c5.2xlarge (network driver ENA, block device driver NVMe)
 - amd64 / c4.2xlarge (network driver IXGBEVF)
@@ -101,7 +101,7 @@ additional fixes:
 ## Caveats
 
 Sometimes Gentoo server could work really slow, around 200Kb/sec, making whole
-process much slower. You could erminate AMI builder and restart. New request
+process much slower. You could terminate AMI builder and restart. New request
 will be most-likely served from another instance and will be fast. Another
 option is to change server in settings to the one that you trust.
 
