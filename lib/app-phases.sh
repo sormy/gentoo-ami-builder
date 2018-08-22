@@ -28,6 +28,7 @@ Options:
     --security-group <value>        (default is "$EC2_SECURITY_GROUP")
     --key-pair <value>
     --gentoo-profile <value>        (default is "$GENTOO_PROFILE")
+    --gentoo-mirror <value>         (default is "$GENTOO_MIRROR")
     --gentoo-image-name <value>     (default is "$GENTOO_IMAGE_NAME_PREFIX")
     --resume-instance-id <value>
     --skip-phases <value>

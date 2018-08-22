@@ -1,4 +1,4 @@
-# GENTOO AMI BUILDER
+# Gentoo AMI Builder
 
 ## Features
 

@@ -21,7 +21,7 @@
 # global WGET_OPTS
 # global EMERGE_OPTS
 # global GENKERNEL_OPTS
-# global GENTOO_DISTFILES_URL
+# global GENTOO_MIRROR
 # global GENTOO_ARCH
 # global GENTOO_PROFILE
 # global GRUB_PLATFORMS
@@ -72,7 +72,7 @@ $(
         WGET_OPTS \
         EMERGE_OPTS \
         GENKERNEL_OPTS \
-        GENTOO_DISTFILES_URL \
+        GENTOO_MIRROR \
         GENTOO_ARCH \
         GENTOO_PROFILE \
         GRUB_PLATFORMS \

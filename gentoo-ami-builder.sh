@@ -4,24 +4,24 @@ SCRIPT_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
 
 # shellcheck source=lib/app-lib.sh
 source "$SCRIPT_DIR/lib/app-lib.sh"
-# shellcheck source=lib/app-opts.sh
-source "$SCRIPT_DIR/lib/app-opts.sh"
+# shellcheck source=lib/opt.sh
+source "$SCRIPT_DIR/lib/opt.sh"
 # shellcheck source=lib/app-phases.sh
 source "$SCRIPT_DIR/lib/app-phases.sh"
 # shellcheck source=lib/app-trap.sh
 source "$SCRIPT_DIR/lib/app-trap.sh"
-# shellcheck source=lib/elib-bundle.sh
-source "$SCRIPT_DIR/lib/elib-bundle.sh"
-# shellcheck source=lib/elib-core.sh
-source "$SCRIPT_DIR/lib/elib-core.sh"
-# shellcheck source=lib/glib-disk.sh
-source "$SCRIPT_DIR/lib/glib-disk.sh"
-# shellcheck source=lib/glib-ena.sh
-source "$SCRIPT_DIR/lib/glib-ena.sh"
+# shellcheck source=lib/bundle.sh
+source "$SCRIPT_DIR/lib/bundle.sh"
+# shellcheck source=lib/elib.sh
+source "$SCRIPT_DIR/lib/elib.sh"
+# shellcheck source=lib/disk.sh
+source "$SCRIPT_DIR/lib/disk.sh"
+# shellcheck source=lib/ena.sh
+source "$SCRIPT_DIR/lib/ena.sh"
 
 APP_NAME="gentoo-ami-builder"
 APP_DESCRIPTION="Gentoo AMI Builder"
-APP_VERSION="1.0.0"
+APP_VERSION="1.0.1"
 
 # Security group with incoming connection available on SSH port (22).
 EC2_SECURITY_GROUP="default"
@@ -76,7 +76,7 @@ GENTOO_PROFILE="amd64"
 GENTOO_ARCH="amd64"
 
 # Primary Gentoo mirror to look for Gentoo stage tarballs and portage snapshots.
-GENTOO_DISTFILES_URL="http://distfiles.gentoo.org"
+GENTOO_MIRROR="http://distfiles.gentoo.org"
 
 # Target AMI image prefix.
 GENTOO_IMAGE_NAME_PREFIX="Gentoo Linux"
@@ -108,33 +108,49 @@ EC2_PUBLIC_IP=""
 # Stop on any error required to properly handle errors.
 set -e
 
-# Parse arguments and make them available for get_arg() function.
-parse_args "$@"
+opt_config "
+    --instance-type \
+    --amazon-image-id \
+    --security-group \
+    --key-pair \
+    --gentoo-profile \
+    --gentoo-mirror \
+    --gentoo-image-name \
+    --resume-instance-id \
+    --skip-phases \
+    --pause-before-reboot \
+    --terminate-on-failure \
+    --color \
+"
+
+# Parse arguments and make them available for opt_get() function.
+opt_parse "$@"
 
 # Show help screen immeditely if selected.
-if [ "$APP_COMMAND" = "help" ]; then
+if [ "$(opt_cmd)" = "help" ]; then
     show_help
     exit
 fi
 
 # Show version screen immeditely if selected.
-if [ "$APP_COMMAND" = "version" ]; then
+if [ "$(opt_cmd)" = "version" ]; then
     show_version
     exit
 fi
 
 # Override default values if they are passed from command line.
-ARG="$(get_arg --instance-type)";       [ -z "$ARG" ] || EC2_INSTANCE_TYPE="$ARG"
-ARG="$(get_arg --amazon-image-id)";     [ -z "$ARG" ] || EC2_AMAZON_IMAGE_ID="$ARG"
-ARG="$(get_arg --security-group)";      [ -z "$ARG" ] || EC2_SECURITY_GROUP="$ARG"
-ARG="$(get_arg --key-pair)";            [ -z "$ARG" ] || EC2_KEY_PAIR="$ARG"
-ARG="$(get_arg --gentoo-profile)";      [ -z "$ARG" ] || GENTOO_PROFILE="$ARG"
-ARG="$(get_arg --gentoo-image-name)";   [ -z "$ARG" ] || GENTOO_IMAGE_NAME_PREFIX="$ARG"
-ARG="$(get_arg --resume-instance-id)";  [ -z "$ARG" ] || EC2_INSTANCE_ID="$ARG"
-ARG="$(get_arg --skip-phases)";         [ -z "$ARG" ] || SKIP_PHASES="$ARG"
-ARG="$(get_arg --pause-before-reboot)"; [ -z "$ARG" ] || PAUSE_BEFORE_REBOOT="$ARG"
-ARG="$(get_arg --terminate-on-failure)";[ -z "$ARG" ] || TERMINATE_ON_FAILURE="$ARG"
-ARG="$(get_arg --color)";               [ -z "$ARG" ] || COLOR="$ARG"
+OPT="$(opt_get --instance-type)";       [ -z "$OPT" ] || EC2_INSTANCE_TYPE="$OPT"
+OPT="$(opt_get --amazon-image-id)";     [ -z "$OPT" ] || EC2_AMAZON_IMAGE_ID="$OPT"
+OPT="$(opt_get --security-group)";      [ -z "$OPT" ] || EC2_SECURITY_GROUP="$OPT"
+OPT="$(opt_get --key-pair)";            [ -z "$OPT" ] || EC2_KEY_PAIR="$OPT"
+OPT="$(opt_get --gentoo-profile)";      [ -z "$OPT" ] || GENTOO_PROFILE="$OPT"
+OPT="$(opt_get --gentoo-mirror)";       [ -z "$OPT" ] || GENTOO_MIRROR="$OPT"
+OPT="$(opt_get --gentoo-image-name)";   [ -z "$OPT" ] || GENTOO_IMAGE_NAME_PREFIX="$OPT"
+OPT="$(opt_get --resume-instance-id)";  [ -z "$OPT" ] || EC2_INSTANCE_ID="$OPT"
+OPT="$(opt_get --skip-phases)";         [ -z "$OPT" ] || SKIP_PHASES="$OPT"
+OPT="$(opt_get --pause-before-reboot)"; [ -z "$OPT" ] || PAUSE_BEFORE_REBOOT="$OPT"
+OPT="$(opt_get --terminate-on-failure)";[ -z "$OPT" ] || TERMINATE_ON_FAILURE="$OPT"
+OPT="$(opt_get --color)";               [ -z "$OPT" ] || COLOR="$OPT"
 
 # If resume is enabled then we should skip first phase.
 if [ -n "$EC2_INSTANCE_ID" ]; then

@@ -7,7 +7,7 @@
 ################################################################################
 
 # global WGET_OPTS
-# global GENTOO_DISTFILES_URL
+# global GENTOO_MIRROR
 # global GENTOO_ARCH
 # global GENTOO_PROFILE
 
@@ -84,9 +84,9 @@ eindent
 
 einfo "Downloading..."
 
-STAGE3_PATH_URL="$GENTOO_DISTFILES_URL/releases/$GENTOO_ARCH/autobuilds/latest-stage3-$GENTOO_PROFILE.txt"
+STAGE3_PATH_URL="$GENTOO_MIRROR/releases/$GENTOO_ARCH/autobuilds/latest-stage3-$GENTOO_PROFILE.txt"
 STAGE3_PATH="$(curl -s "$STAGE3_PATH_URL" | grep -v "^#" | cut -d" " -f1)"
-STAGE3_URL="$GENTOO_DISTFILES_URL/releases/$GENTOO_ARCH/autobuilds/$STAGE3_PATH"
+STAGE3_URL="$GENTOO_MIRROR/releases/$GENTOO_ARCH/autobuilds/$STAGE3_PATH"
 
 eexec wget $WGET_OPTS "$STAGE3_URL"
 
@@ -114,7 +114,7 @@ eexec cp -f /mnt/gentoo/usr/share/portage/config/repos.conf \
 
 einfo "Downloading..."
 
-PORTAGE_URL="$GENTOO_DISTFILES_URL/snapshots/portage-latest.tar.xz"
+PORTAGE_URL="$GENTOO_MIRROR/snapshots/portage-latest.tar.xz"
 eexec wget $WGET_OPTS "$PORTAGE_URL"
 
 einfo "Extracting..."

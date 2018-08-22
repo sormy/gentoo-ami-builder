@@ -5,12 +5,11 @@ COLOR_RED=$'\033[91m'
 COLOR_YELLOW=$'\033[93m'
 COLOR_RESET=$'\033[00m'
 
-ELOG_GREEN_COLOR=""
-ELOG_RED_COLOR=""
-ELOG_RESET_COLOR=""
-ELOG_YELLOW_COLOR=""
-
-ELOG_INDENT=""
+# global ELOG_INDENT
+# global ELOG_COLOR_OK
+# global ELOG_COLOR_ERROR
+# global ELOG_COLOR_QUOTE
+# global ELOG_COLOR_RESET
 
 eon() {
     echo "$1" | grep -q -i '^\(1\|yes\|true\|on\)$'
@@ -22,21 +21,21 @@ eoff() {
 
 einfo() {
     # global ELOG_INDENT
-    # global ELOG_GREEN_COLOR
-    # global ELOG_RESET_COLOR
-    echo " $ELOG_GREEN_COLOR*$ELOG_RESET_COLOR$ELOG_INDENT" "$@"
+    # global ELOG_COLOR_OK
+    # global ELOG_COLOR_RESET
+    echo " $ELOG_COLOR_OK*$ELOG_COLOR_RESET$ELOG_INDENT" "$@"
 }
 
 eerror() {
     # global ELOG_INDENT
-    # global ELOG_RED_COLOR
-    # global ELOG_RESET_COLOR
-    echo " $ELOG_RED_COLOR*$ELOG_RESET_COLOR$ELOG_INDENT" "$@" >&2
+    # global ELOG_COLOR_ERROR
+    # global ELOG_COLOR_RESET
+    echo " $ELOG_COLOR_ERROR*$ELOG_COLOR_RESET$ELOG_INDENT" "$@" >&2
 }
 
 eecho() {
     # global ELOG_INDENT
-    echo "$ELOG_INDENT  " "$@"
+    echo "  $ELOG_INDENT" "$@"
 }
 
 eindent_reset() {
@@ -51,7 +50,7 @@ eindent() {
 
 eoutdent() {
     # global ELOG_INDENT
-    ELOG_INDENT="${ELOG_INDENT::${#ELOG_INDENT}-2}"
+    [ -n "$ELOG_INDENT" ] && ELOG_INDENT="${ELOG_INDENT::${#ELOG_INDENT}-2}"
 }
 
 edie() {
@@ -60,17 +59,17 @@ edie() {
 }
 
 elog_enable_colors() {
-    ELOG_GREEN_COLOR="$COLOR_GREEN"
-    ELOG_RED_COLOR="$COLOR_RED"
-    ELOG_RESET_COLOR="$COLOR_RESET"
-    ELOG_YELLOW_COLOR="$COLOR_YELLOW"
+    ELOG_COLOR_OK="$COLOR_GREEN"
+    ELOG_COLOR_ERROR="$COLOR_RED"
+    ELOG_COLOR_RESET="$COLOR_RESET"
+    ELOG_COLOR_QUOTE="$COLOR_YELLOW"
 }
 
 elog_disable_colors() {
-    ELOG_GREEN_COLOR=""
-    ELOG_RED_COLOR=""
-    ELOG_RESET_COLOR=""
-    ELOG_YELLOW_COLOR=""
+    ELOG_COLOR_OK=""
+    ELOG_COLOR_ERROR=""
+    ELOG_COLOR_RESET=""
+    ELOG_COLOR_QUOTE=""
 }
 
 elog_set_colors() {
@@ -85,13 +84,17 @@ elog_set_colors() {
 ecmd() {
     local cmd
     local arg
+    local line_count
+
     for arg in "$@"; do
-        if echo "$arg" | grep -q '["`$\\[:space:]]'; then
+        line_count="$(echo "$arg" | wc -l)"
+        if [ "$line_count" -gt 1 ] || echo "$arg" | grep -q '["`$\\[:space:]]'; then
             cmd="$cmd \"$(echo "$arg" | sed -e 's/\(["`$\\]\)/\\\1/g')\""
         else
             cmd="$cmd $arg"
         fi
     done
+
     echo "${cmd:1}"
 }
 
@@ -104,8 +107,8 @@ eqexec() {
 # if -p is passed then also pass process output on success
 eexec() {
     # global ELOG_INDENT
-    # global ELOG_YELLOW_COLOR
-    # global ELOG_RESET_COLOR
+    # global ELOG_COLOR_QUOTE
+    # global ELOG_COLOR_RESET
 
     local passthrough=0
 
@@ -127,7 +130,7 @@ eexec() {
         error_code="$?"
         eerror "Process has failed with error code $error_code: $(ecmd "$@")"
         cat "$output_file" \
-            | sed -e 's/^/'"$ELOG_INDENT   $ELOG_YELLOW_COLOR>$ELOG_RESET_COLOR "'/' \
+            | sed -e 's/^/'"$ELOG_INDENT   $ELOG_COLOR_QUOTE>$ELOG_COLOR_RESET "'/' \
             >&2
     fi
 
