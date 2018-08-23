@@ -58,25 +58,30 @@ This policy could be used to grant AWS user all needed permissions:
 
 ## Gentoo Profiles
 
-Available Gentoo profiles that could be used for bootstrap and that are
-theoretically compatible with EC2 hardware as of 2018-08-12 are:
+Available Gentoo profiles that could be theoretically used for bootstrap and that are compatible with EC2 hardware as of 2018-08-12 are:
 
-- **amd64**: amd64-hardened+nomultilib
-- **amd64**: amd64-hardened-selinux+nomultilib
-- **amd64**: amd64-hardened-selinux
-- **amd64**: amd64-hardened
-- **amd64**: amd64-nomultilib
-- **amd64**: amd64-systemd
-- **amd64**: amd64-uclibc-hardened
-- **amd64**: amd64-uclibc-vanilla
-- **amd64**: amd64
-- **amd64**: x32
-- **x86**: i486
-- **x86**: i686-hardened
-- **x86**: i686-systemd
-- **x86**: i686-uclibc-hardened
-- **x86**: i686-uclibc-vanilla
-- **x86**: i686
+- **[?]** amd64-hardened+nomultilib (**amd64** arch)
+- **[?]** amd64-hardened-selinux+nomultilib (**amd64** arch)
+- **[?]** amd64-hardened-selinux (**amd64** arch)
+- **[?]** amd64-hardened (**amd64** arch)
+- **[?]** amd64-nomultilib (**amd64** arch)
+- **[X]** amd64-systemd (**amd64** arch)
+- **[?]** amd64-uclibc-hardened (**amd64** arch)
+- **[?]** amd64-uclibc-vanilla (**amd64** arch)
+- **[V]** amd64 (**amd64** arch)
+- **[?]** x32 (**amd64** arch)
+- **[X]** i486 (**x86** arch)
+- **[X]** i686-hardened (**x86** arch)
+- **[X]** i686-systemd (**x86** arch)
+- **[X]** i686-uclibc-hardened (**x86** arch)
+- **[X]** i686-uclibc-vanilla (**x86** arch)
+- **[X]** i686 (**x86** arch)
+
+Icons:
+
+- [V] - verified, works
+- [X] - verified, doesn't work in current version, but could be fixed
+- [?] - not verified, could work or not
 
 ## Tested Configurations
 
