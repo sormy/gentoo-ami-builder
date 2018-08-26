@@ -129,7 +129,8 @@ eoutdent
 
 ################################################################################
 
-einfo "Installing local overlay (with ENA)..."
+einfo "Installing local overlay (with ENA module)..."
+einfo "  see more: https://github.com/gentoo/gentoo/pull/9658"
 
 create_local_overlay_with_ena_module /mnt/gentoo
 
