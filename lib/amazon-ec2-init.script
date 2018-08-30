@@ -1,0 +1,50 @@
+#!/bin/sh
+
+provision_instance() {
+    lock="/var/lib/amazon-ec2-init.lock"
+    instance_id="$(curl -s http://169.254.169.254/latest/meta-data/instance-id)"
+
+    [ -f "$lock" ] && [ "$(cat "$lock")" = "$instance_id" ] && exit 0
+
+    echo "Provisioning instance..."
+
+    provision_hostname
+    provision_ssh_authorized_keys
+    provision_systemd_machine_id
+
+    echo "$instance_id" > "$lock"
+}
+
+provision_hostname() {
+    echo "Setting hostname..."
+
+    hostnamectl set-hostname \
+        "$(curl -s http://169.254.169.254/latest/meta-data/local-hostname)"
+}
+
+provision_ssh_authorized_keys() {
+    echo "Importing SSH authorized keys..."
+
+    [ -e /root/.ssh ] && rm -rf /root/.ssh
+    mkdir -p /root/.ssh
+    chown root:root /root/.ssh
+    chmod 750 /root/.ssh
+
+    keys="$(curl -s http://169.254.169.254/latest/meta-data/public-keys/ \
+        | cut -d = -f 1 \
+        | xargs printf "http://169.254.169.254/latest/meta-data/public-keys/%s/openssh-key\n")"
+
+    if [ -n "$keys" ]; then
+        curl -s $keys > /root/.ssh/authorized_keys
+        chown root:root /root/.ssh/authorized_keys
+        chmod 640 /root/.ssh/authorized_keys
+    fi
+}
+
+provision_systemd_machine_id() {
+    echo "Regenerating systemd machine ID..."
+
+    systemd-machine-id-setup
+}
+
+provision_instance

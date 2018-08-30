@@ -3,25 +3,27 @@
 ## Features
 
 - One line command to create bootable Gentoo AMI images.
-- Has all needed block device drivers to boot instance (NVMe etc).
-- Has all needed network drivers to have network after boot (IXGBEVF, ENA etc).
-- Minimalistic, only mandatory packages are installed to get bootable system.
+- Could setup all needed block device drivers to boot instance (NVMe etc).
+- Could setup all needed network drivers to have network after boot (IXGBEVF, ENA etc).
+- Minimalistic, only mandatory packages will be installed to get bootable system.
   System eats just ~50 MB of RAM after boot.
 - Has minimalistic amazon-ec2-init script that could bootstrap hostname and ssh keys.
 - Uses amazon-provided kernel config as basis.
 - Build time is around 30-40 minutes (on 8 cores instance).
 - Highly customizable, open source and free :-)
 - Nice progress reporting with advanced error handling.
-- No other dependencies besides aws cli.
 - Supports HVM virtualization type (PVM is not supported).
-- Supports all types of instances.
+- Supports all known types of instances.
+- Supports OpenRC and Systemd profiles.
+- Supports experimental 17.1 amd64 profiles.
 
 ## Prerequisites
 
 - AWS account.
 - AWS user with enabled programmatic access.
-- Locally installed and configured AWS cli:
+- Locally installed and configured aws cli:
   <https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html>
+- openssh, bash, curl, grep, sed, coreutils
 - User should have these permissions:
   - ec2:RunInstances
   - ec2:TerminateInstances
@@ -56,16 +58,17 @@ This policy could be used to grant AWS user all needed permissions:
 }
 ```
 
-## Gentoo Profiles
+## Gentoo Stage3 Tarballs
 
-Available Gentoo profiles that could be theoretically used for bootstrap and that are compatible with EC2 hardware as of 2018-08-12 are:
+Available Gentoo stage3 tarballs that could be theoretically used for bootstrap
+and that are compatible with EC2 hardware as of 2018-08-12 are:
 
 - **[?]** amd64-hardened+nomultilib (**amd64** arch)
 - **[?]** amd64-hardened-selinux+nomultilib (**amd64** arch)
 - **[?]** amd64-hardened-selinux (**amd64** arch)
 - **[?]** amd64-hardened (**amd64** arch)
 - **[?]** amd64-nomultilib (**amd64** arch)
-- **[X]** amd64-systemd (**amd64** arch)
+- **[V]** amd64-systemd (**amd64** arch)
 - **[?]** amd64-uclibc-hardened (**amd64** arch)
 - **[?]** amd64-uclibc-vanilla (**amd64** arch)
 - **[V]** amd64 (**amd64** arch)
@@ -88,6 +91,8 @@ Icons:
 - amd64 / c5.2xlarge (network driver ENA, block device driver NVMe)
 - amd64 / c4.2xlarge (network driver IXGBEVF)
 - amd64 / t2.2xlarge (unlimited cpu credits)
+- OpenRC flavor
+- systemd flavor
 
 ## Included Drivers
 
@@ -126,7 +131,7 @@ Usually you just need to configure aws cli and run command below to get working
 Gentoo AMI image:
 
 ```shell
-gentoo-ami-builder --key-pair "Your Key Pair Name
+gentoo-ami-builder --key-pair "Your Key Pair Name"
 ```
 
 ## Customization
@@ -146,13 +151,11 @@ Recommendation is to add extra actions needed for target image into phase 3 scri
 ## TODOs
 
 - fix compatibility with x86
-- test and fix issues with systemd profiles
 - customizable user phase passed via command line argument
 - fix all shellcheck issues
 - add debugging section in README
 - fix PVM support
 - test all gentoo profiles, blacklist unsupported
-- submit ena ebuild to gentoo and remove local overlay step
 - better ssh connection wait function (see below)
 - cover by unit tests
 

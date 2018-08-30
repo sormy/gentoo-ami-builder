@@ -12,19 +12,12 @@
 # global COLOR_RED
 # global COLOR_YELLOW
 # global COLOR_RESET
-# global ENA_REPO_NAME
-# global ENA_REPO_BRANCH
-# global ENA_NAME
-# global ENA_GROUP
-# global ENA_PKG
-# global ENA_VERSION
-# global WGET_OPTS
+# global CURL_OPTS
 # global EMERGE_OPTS
 # global GENKERNEL_OPTS
 # global GENTOO_MIRROR
 # global GENTOO_ARCH
-# global GENTOO_PROFILE
-# global GRUB_PLATFORMS
+# global GENTOO_STAGE3
 
 bundle_var_list() {
     local var_list="$*"
@@ -63,19 +56,14 @@ $(
         COLOR_RED \
         COLOR_YELLOW \
         COLOR_RESET \
-        ENA_REPO_NAME \
-        ENA_REPO_BRANCH \
-        ENA_NAME \
-        ENA_GROUP \
-        ENA_PKG \
-        ENA_VERSION \
-        WGET_OPTS \
+        CURL_OPTS \
         EMERGE_OPTS \
         GENKERNEL_OPTS \
         GENTOO_MIRROR \
+        GENTOO_GPG_KEYS \
         GENTOO_ARCH \
+        GENTOO_STAGE3 \
         GENTOO_PROFILE \
-        GRUB_PLATFORMS \
 )
 $(
     bundle_func_list \
@@ -97,7 +85,8 @@ $(
         append_disk_part \
         find_disk1 \
         find_disk2 \
-        create_local_overlay_with_ena_module \
+        download_distfile_safe \
+        download_portage_safe \
 )
 elog_set_colors "\$COLOR"
 eindent

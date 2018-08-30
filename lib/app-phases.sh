@@ -9,34 +9,84 @@
 # global EC2_INSTANCE_TYPE
 # global EC2_AMAZON_IMAGE_ID
 # global EC2_SECURITY_GROUP
-# global GENTOO_PROFILE
+# global GENTOO_STAGE3
 # global GENTOO_ARCH
 # global GENTOO_IMAGE_NAME_PREFIX
 # global PAUSE_BEFORE_REBOOT
 # global TERMINATE_ON_FAILURE
 # global COLOR
 # global SSH_OPTS
+# global SCRIPT_DIR
 
 show_help() {
+    GENTOO_STAGE3_LIST="$(
+        curl -s http://distfiles.gentoo.org/releases/{x86,amd64}/autobuilds/ \
+            | grep -e '"latest-stage3-\S*\.txt"' -o \
+            | sed -e 's/"//g' -e 's/^latest-stage3-//' -e 's/\.txt$//'
+    )"
+
+    GENTOO_PROFILE_LIST="$(
+        curl -s https://raw.githubusercontent.com/gentoo/gentoo/master/profiles/profiles.desc \
+            | sed 's/ \{1,\}/ /g' \
+            | grep -e '^\(amd64\|x86\) ' \
+            | cut -d ' ' -f 2
+    )"
+
 cat << END
 $APP_NAME: $APP_DESCRIPTION v$APP_VERSION
+
 Usage:
     $(basename "$0") [options]
+
 Options:
     --instance-type <value>         (default is "$EC2_INSTANCE_TYPE")
+        Use specific instance type to bootstrap Gentoo AMI image.
+        Instance types: https://aws.amazon.com/ec2/instance-types/
+        Pricing: https://aws.amazon.com/ec2/pricing/on-demand/
+
     --amazon-image-id <value>       (default is "$EC2_AMAZON_IMAGE_ID")
+        Use this Amazon Linux image ID to bootstrap Gentoo.
+
     --security-group <value>        (default is "$EC2_SECURITY_GROUP")
+        Use this security group to bootstrap thru SSH (21 port should be open).
+
     --key-pair <value>
+        Use this key pair for SSH access (keys should be availavle locally).
+
+    --gentoo-stage3 <value>         (default is "$GENTOO_STAGE3")
+        Bootstrap using this stage3:
+$(echo "$GENTOO_STAGE3_LIST" | sed 's/^/          * /')
+
     --gentoo-profile <value>        (default is "$GENTOO_PROFILE")
+        Switch to this profile during installation:
+$(echo "$GENTOO_PROFILE_LIST" | sed 's/^/          * /')
+
     --gentoo-mirror <value>         (default is "$GENTOO_MIRROR")
+        Set to use specific gentoo mirror instead of default one.
+
     --gentoo-image-name <value>     (default is "$GENTOO_IMAGE_NAME_PREFIX")
+        Target Gentoo AMI image name prefix.
+
     --resume-instance-id <value>
+        (DEBUG) Use already spawned instance for bootstrap.
+
     --skip-phases <value>
+        (DEBUG) List of phase digits to skip (no spaces, commas etc).
+
     --pause-before-reboot <bool>    (default is "$PAUSE_BEFORE_REBOOT")
+        (DEBUG) Pause process before reboot.
+
     --terminate-on-failure <bool>   (default is "$TERMINATE_ON_FAILURE")
+        (DEBUG) Could be used to disable instance termination on failure.
+
     --color <bool>                  (default is "$COLOR")
+        Enable or disable colors in output.
+
     --version
+        Show version.
+
     --help
+        Show this screen.
 END
 }
 
@@ -56,8 +106,11 @@ show_intro() {
     einfo "Security Group: $EC2_SECURITY_GROUP"
     einfo "Key Pair: $EC2_KEY_PAIR"
 
-    einfo "Gentoo Profile: $GENTOO_PROFILE ($GENTOO_ARCH)"
-    einfo "Gentoo Image Name: $GENTOO_IMAGE_NAME_PREFIX"
+    einfo "Gentoo Source Stage3: $GENTOO_STAGE3 (ARCH: $GENTOO_ARCH)"
+    if [ -n "$GENTOO_PROFILE" ]; then
+        einfo "Gentoo Source Profile: $GENTOO_PROFILE"
+    fi
+    einfo "Gentoo Target Image: $GENTOO_IMAGE_NAME_PREFIX"
 
     eoutdent
 }
@@ -160,6 +213,20 @@ show_phase2_prepare_root() {
     ssh $SSH_OPTS "$amazon_user@$public_ip" \
         "sudo bash -s" < "$phase_script" \
         || edie "Phase bootstrap has failed"
+
+    einfo "Sideloading amazon-ec2-init..."
+
+    ssh $SSH_OPTS "$amazon_user@$public_ip" \
+        "sudo bash -c 'cat > /mnt/gentoo/amazon-ec2-init.openrc'" \
+        < "$SCRIPT_DIR/lib/amazon-ec2-init.openrc"
+
+    ssh $SSH_OPTS "$amazon_user@$public_ip" \
+        "sudo bash -c 'cat > /mnt/gentoo/amazon-ec2-init.service'" \
+        < "$SCRIPT_DIR/lib/amazon-ec2-init.service"
+
+    ssh $SSH_OPTS "$amazon_user@$public_ip" \
+        "sudo bash -c 'cat > /mnt/gentoo/amazon-ec2-init.script'" \
+        < "$SCRIPT_DIR/lib/amazon-ec2-init.script"
 
     eoutdent
 }

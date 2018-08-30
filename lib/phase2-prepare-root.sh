@@ -6,22 +6,22 @@
 
 ################################################################################
 
-# global WGET_OPTS
+# global CURL_OPTS
 # global GENTOO_MIRROR
 # global GENTOO_ARCH
-# global GENTOO_PROFILE
+# global GENTOO_STAGE3
 
 ################################################################################
 
 # in debug mode partitions could be still mounted by previous failed attempt
-DISK1=$(find_disk1)
-DISK2=$(find_disk2)
-DISK1P1=$(append_disk_part $DISK1 1)
-DISK2P1=$(append_disk_part $DISK2 1)
+DISK1="$(find_disk1)"
+DISK2="$(find_disk2)"
+DISK1P1="$(append_disk_part "$DISK1" 1)"
+DISK2P1="$(append_disk_part "$DISK2" 1)"
 
 ################################################################################
 
-einfo "Setting time..."
+einfo "Synchronizing time..."
 
 # having wrong time will cause all kinds of troubles
 eexec yum -y -q install ntp
@@ -51,15 +51,15 @@ eindent
 einfo "Creating partitions..."
 
 echo ";" | eqexec sfdisk --label dos "$DISK2"
-while [ ! -e $DISK2P1 ]; do sleep 1; done
+while [ ! -e "$DISK2P1" ]; do sleep 1; done
 
 einfo "Formatting partitions..."
 
-eexec mkfs.ext4 -q $DISK2P1
+eexec mkfs.ext4 -q "$DISK2P1"
 
 einfo "Labeling partitions..."
 
-eexec e2label $DISK2P1 aux-root
+eexec e2label "$DISK2P1" aux-root
 
 eoutdent
 
@@ -68,7 +68,7 @@ eoutdent
 einfo "Mounting disk 2..."
 
 eexec mkdir -p /mnt/gentoo
-eexec mount $DISK2P1 /mnt/gentoo
+eexec mount "$DISK2P1" /mnt/gentoo
 
 ################################################################################
 
@@ -82,17 +82,18 @@ einfo "Installing stage3..."
 
 eindent
 
-einfo "Downloading..."
-
-STAGE3_PATH_URL="$GENTOO_MIRROR/releases/$GENTOO_ARCH/autobuilds/latest-stage3-$GENTOO_PROFILE.txt"
+STAGE3_PATH_URL="$GENTOO_MIRROR/releases/$GENTOO_ARCH/autobuilds/latest-stage3-$GENTOO_STAGE3.txt"
 STAGE3_PATH="$(curl -s "$STAGE3_PATH_URL" | grep -v "^#" | cut -d" " -f1)"
 STAGE3_URL="$GENTOO_MIRROR/releases/$GENTOO_ARCH/autobuilds/$STAGE3_PATH"
+STAGE3_FILE="$(basename "$STAGE3_URL")"
 
-eexec wget $WGET_OPTS "$STAGE3_URL"
+einfo "Downloading: $STAGE3_URL ..."
+
+download_distfile_safe "$STAGE3_URL" "$STAGE3_FILE"
 
 einfo "Extracting..."
 
-eexec tar xpf "$(basename "$STAGE3_URL")" --xattrs-include='*.*' --numeric-owner
+eexec tar xpf "$STAGE3_FILE" --xattrs-include='*.*' --numeric-owner
 
 einfo "Cleaning up..."
 
@@ -112,27 +113,22 @@ eexec mkdir -p /mnt/gentoo/etc/portage/repos.conf
 eexec cp -f /mnt/gentoo/usr/share/portage/config/repos.conf \
     /mnt/gentoo/etc/portage/repos.conf/gentoo.conf
 
-einfo "Downloading..."
-
 PORTAGE_URL="$GENTOO_MIRROR/snapshots/portage-latest.tar.xz"
-eexec wget $WGET_OPTS "$PORTAGE_URL"
+PORTAGE_FILE="$(basename "$PORTAGE_URL")"
+
+einfo "Downloading: $PORTAGE_URL ..."
+
+download_portage_safe "$PORTAGE_URL" "$PORTAGE_FILE"
 
 einfo "Extracting..."
 
-eexec tar xf "$(basename "$PORTAGE_URL")" -C usr --xattrs-include='*.*' --numeric-owner
+eexec tar xpf "$PORTAGE_FILE" -C usr --xattrs-include='*.*' --numeric-owner
 
 einfo "Cleaning up..."
 
 eexec rm portage-*
 
 eoutdent
-
-################################################################################
-
-einfo "Installing local overlay (with ENA module)..."
-einfo "  see more: https://github.com/gentoo/gentoo/pull/9658"
-
-create_local_overlay_with_ena_module /mnt/gentoo
 
 ################################################################################
 

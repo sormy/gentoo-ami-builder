@@ -16,12 +16,12 @@ source "$SCRIPT_DIR/lib/bundle.sh"
 source "$SCRIPT_DIR/lib/elib.sh"
 # shellcheck source=lib/disk.sh
 source "$SCRIPT_DIR/lib/disk.sh"
-# shellcheck source=lib/ena.sh
-source "$SCRIPT_DIR/lib/ena.sh"
+# shellcheck source=lib/distfiles.sh
+source "$SCRIPT_DIR/lib/distfiles.sh"
 
 APP_NAME="gentoo-ami-builder"
 APP_DESCRIPTION="Gentoo AMI Builder"
-APP_VERSION="1.0.1"
+APP_VERSION="1.0.2"
 
 # Security group with incoming connection available on SSH port (22).
 EC2_SECURITY_GROUP="default"
@@ -41,7 +41,7 @@ EC2_VOLUME_SIZE="20"
 EC2_VOLUME_TYPE="gp2"
 
 # Set to the latest Amazon Linux AMI. You could find it in AWS console.
-EC2_AMAZON_IMAGE_ID="ami-b70554c8" # Amazon Linux 2 AMI as of 2018-08-12
+EC2_AMAZON_IMAGE_ID="ami-04681a1dbd79675a5" # Amazon Linux 2 AMI as of 2018-08-29
 
 # Default user name to log into Amazon Linux.
 AMAZON_USER="ec2-user"
@@ -57,8 +57,8 @@ SSH_OPTS="-o ConnectTimeout=5
           -o StrictHostKeyChecking=no
           -o LogLevel=error"
 
-# Recommended default options for wget.
-WGET_OPTS="--quiet"
+# Curl default options.
+CURL_OPTS="--silent"
 
 # Recommended default options for emerge.
 EMERGE_OPTS="--quiet"
@@ -66,17 +66,20 @@ EMERGE_OPTS="--quiet"
 # Recommended default options for genkernel.
 GENKERNEL_OPTS="--no-color"
 
-# By default it also includes EFI, but it is useless for AWS instances.
-GRUB_PLATFORMS="pc"
+# Gentoo stage3.
+GENTOO_STAGE3="amd64"
 
-# Gentoo profile, see README for more details.
-GENTOO_PROFILE="amd64"
+# Gentoo profile. Blank indicates that stage3 default profile should be used.
+GENTOO_PROFILE=""
 
 # Available Gentoo architectures in EC2 are amd64 and x86.
 GENTOO_ARCH="amd64"
 
 # Primary Gentoo mirror to look for Gentoo stage tarballs and portage snapshots.
 GENTOO_MIRROR="http://distfiles.gentoo.org"
+
+# Current Gentoo GPG public key IDs: https://www.gentoo.org/downloads/signatures/
+GENTOO_GPG_KEYS="$(cat "$SCRIPT_DIR/gentoo-gpg-keys.txt" | grep -v '^#')"
 
 # Target AMI image prefix.
 GENTOO_IMAGE_NAME_PREFIX="Gentoo Linux"
@@ -113,6 +116,7 @@ opt_config "
     --amazon-image-id \
     --security-group \
     --key-pair \
+    --gentoo-stage3 \
     --gentoo-profile \
     --gentoo-mirror \
     --gentoo-image-name \
@@ -143,6 +147,7 @@ OPT="$(opt_get --instance-type)";       [ -z "$OPT" ] || EC2_INSTANCE_TYPE="$OPT
 OPT="$(opt_get --amazon-image-id)";     [ -z "$OPT" ] || EC2_AMAZON_IMAGE_ID="$OPT"
 OPT="$(opt_get --security-group)";      [ -z "$OPT" ] || EC2_SECURITY_GROUP="$OPT"
 OPT="$(opt_get --key-pair)";            [ -z "$OPT" ] || EC2_KEY_PAIR="$OPT"
+OPT="$(opt_get --gentoo-stage3)";       [ -z "$OPT" ] || GENTOO_STAGE3="$OPT"
 OPT="$(opt_get --gentoo-profile)";      [ -z "$OPT" ] || GENTOO_PROFILE="$OPT"
 OPT="$(opt_get --gentoo-mirror)";       [ -z "$OPT" ] || GENTOO_MIRROR="$OPT"
 OPT="$(opt_get --gentoo-image-name)";   [ -z "$OPT" ] || GENTOO_IMAGE_NAME_PREFIX="$OPT"
@@ -158,13 +163,10 @@ if [ -n "$EC2_INSTANCE_ID" ]; then
 fi
 
 # Auto detect gentooo architecture based on provided gentoo profile.
-GENTOO_ARCH=$(echo "$GENTOO_PROFILE" | grep -q '^\(amd64\|x32\)' && echo "amd64" || echo "x86")
+GENTOO_ARCH=$(echo "$GENTOO_STAGE3" | grep -q '^\(amd64\|x32\)' && echo "amd64" || echo "x86")
 
 # Add profile name into default image name prefix.
-GENTOO_IMAGE_NAME_PREFIX="$GENTOO_IMAGE_NAME_PREFIX ($GENTOO_PROFILE)"
-
-# Die on configuration that are well know to not work with current version of the script.
-[ "$GENTOO_ARCH" = "x86" ] && edie "Gentoo x86 Architecture is not supported yet."
+GENTOO_IMAGE_NAME_PREFIX="$GENTOO_IMAGE_NAME_PREFIX ($GENTOO_STAGE3)"
 
 # Install error handler that will terminate instance and cleanup temporary files.
 trap app_exit_trap EXIT
@@ -177,6 +179,13 @@ bundle_phase_files
 
 # Show smalli intro screen with basic information about selected parameters.
 show_intro
+
+# Die on configuration that are well know to not work with current version of the script.
+if [ "$GENTOO_ARCH" = "x86" ]; then
+    eerror "Sorry x86 stage3 is not supported yet."
+    eerror "Please open an issue to get this fixed (not sure if somebody needs x86 in cloud)."
+    exit 1
+fi
 
 # Show header with timestamp.
 show_header

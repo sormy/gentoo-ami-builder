@@ -8,10 +8,10 @@
 
 # we need to detect disk device names and partition names
 # as disk name could vary depending on instance type
-DISK1=$(find_disk1)
-DISK2=$(find_disk2)
-DISK1P1=$(append_disk_part $DISK1 1)
-DISK2P1=$(append_disk_part $DISK2 1)
+DISK1="$(find_disk1)"
+DISK2="$(find_disk2)"
+DISK1P1="$(append_disk_part "$DISK1" 1)"
+DISK2P1="$(append_disk_part "$DISK2" 1)"
 
 ################################################################################
 
@@ -36,15 +36,15 @@ eindent
 einfo "Creating partitions..."
 
 echo ";" | eqexec sfdisk --label dos "$DISK1"
-while [ ! -e $DISK1P1 ]; do sleep 1; done
+while [ ! -e "$DISK1P1" ]; do sleep 1; done
 
 einfo "Formatting partitions..."
 
-eexec mkfs.ext4 -q $DISK1P1
+eexec mkfs.ext4 -q "$DISK1P1"
 
 einfo "Labeling partitions..."
 
-eexec e2label $DISK1P1 /
+eexec e2label "$DISK1P1" /
 
 eoutdent
 
@@ -53,7 +53,7 @@ eoutdent
 einfo "Mounting disk 1..."
 
 eexec mkdir -p /mnt/gentoo
-eexec mount $DISK1P1 /mnt/gentoo
+eexec mount "$DISK1P1" /mnt/gentoo
 
 ################################################################################
 
@@ -85,7 +85,9 @@ if [ -e "./var/lib/amazon-ec2-init.lock" ]; then
 fi
 
 # reset hostname
-echo "hostname=localhost" > "./etc/conf.d/hostname"
+if [ -e "/etc/conf.d/hostname" ]; then
+    echo "hostname=localhost" > "./etc/conf.d/hostname"
+fi
 
 ################################################################################
 

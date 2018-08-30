@@ -8,10 +8,17 @@
 
 # we need to detect disk device names and partition names
 # as disk name could vary depending on instance type
-DISK1=$(find_disk1)
-DISK2=$(find_disk2)
-DISK1P1=$(append_disk_part $DISK1 1)
-DISK2P1=$(append_disk_part $DISK2 1)
+DISK1="$(find_disk1)"
+DISK2="$(find_disk2)"
+DISK1P1="$(append_disk_part "$DISK1" 1)"
+DISK2P1="$(append_disk_part "$DISK2" 1)"
+
+# detect if target is systemd
+GENTOO_SYSTEMD="$(
+    (echo "$GENTOO_PROFILE" | grep -q 'systemd' \
+        || echo "$GENTOO_STAGE3" | grep -q 'systemd') \
+        && echo yes || echo no
+)"
 
 ################################################################################
 
@@ -19,7 +26,7 @@ if ! mount | grep -q "/mnt/gentoo"; then
     einfo "Mounting partitions..."
 
     eexec mkdir -p /mnt/gentoo
-    eexec mount $DISK2P1 /mnt/gentoo
+    eexec mount "$DISK2P1" /mnt/gentoo
 fi
 
 ################################################################################
@@ -42,12 +49,17 @@ ROOTFS_PART=$(blkid | grep aux-root | sed -e 's/^.* \(UUID=\S\+\).*$/\1/' -e 's/
 
 GRUB_CONFIG_SEARCH="/boot/grub/menu.lst /boot/grub/grub.cfg /boot/grub2/grub.cfg"
 
+GRUB_CMDLINE_LINUX="net.ifnames=0"
+if eon "$GENTOO_SYSTEMD"; then
+    GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX init=/lib/systemd/systemd"
+fi
+
 for GRUB_CONFIG in $GRUB_CONFIG_SEARCH; do
     if [ -e "$GRUB_CONFIG" ]; then
         eexec sed -i \
-            -e 's!/boot/\(vmlinuz\|kernel\)-\S\+!'$KERNEL_FILE'!g' \
-            -e 's!/boot/initramfs-\S\+!'$INITRAMFS_FILE'!g' \
-            -e 's!root=\S\+!root='$ROOTFS_PART'!g' \
+            -e 's!/boot/\(vmlinuz\|kernel\)-\S\+!'"$KERNEL_FILE"'!g' \
+            -e 's!/boot/initramfs-\S\+!'"$INITRAMFS_FILE"'!g' \
+            -e 's!root=\S\+!root='"$ROOTFS_PART"' '"$GRUB_CMDLINE_LINUX"'!g' \
             "$GRUB_CONFIG"
     fi
 done

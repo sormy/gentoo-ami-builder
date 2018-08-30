@@ -1,0 +1,52 @@
+#!/sbin/openrc-run
+
+depend() {
+    before hostname
+    need net.eth0
+}
+
+start() {
+    local lock="/var/lib/amazon-ec2-init.lock"
+    local instance_id="$(curl -s http://169.254.169.254/latest/meta-data/instance-id)"
+
+    [ -f "$lock" ] && [ "$(cat "$lock")" = "$instance_id" ] && exit 0
+
+    einfo "Provisioning instance..."
+
+    eindent
+    provision_hostname
+    provision_ssh_authorized_keys
+    eoutdent
+
+    echo "$instance_id" > "$lock"
+}
+
+provision_hostname() {
+    ebegin "Setting hostname"
+
+    local hostname="$(curl -s http://169.254.169.254/latest/meta-data/local-hostname)"
+    echo "hostname=${hostname}" > /etc/conf.d/hostname
+
+    eend $?
+}
+
+provision_ssh_authorized_keys() {
+    ebegin "Importing SSH authorized keys"
+
+    [ -e /root/.ssh ] && rm -rf /root/.ssh
+    mkdir -p /root/.ssh
+    chown root:root /root/.ssh
+    chmod 750 /root/.ssh
+
+    local keys="$(curl -s http://169.254.169.254/latest/meta-data/public-keys/ \
+        | cut -d = -f 1 \
+        | xargs printf "http://169.254.169.254/latest/meta-data/public-keys/%s/openssh-key\n")"
+
+    if [ -n "$keys" ]; then
+        curl -s $keys > /root/.ssh/authorized_keys
+        chown root:root /root/.ssh/authorized_keys
+        chmod 640 /root/.ssh/authorized_keys
+    fi
+
+    eend $?
+}

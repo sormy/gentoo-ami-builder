@@ -8,23 +8,48 @@
 
 # global EMERGE_OPTS
 # global GENKERNEL_OPTS
-# global ENA_PKG
+# global GENTOO_ARCH
+# global GENTOO_STAGE3
+# global GENTOO_PROFILE
+# global CURL_OPTS
 
 ################################################################################
 
 # we need to detect disk device names and partition names
 # as disk name could vary depending on instance type
-DISK1=$(find_disk1)
-DISK2=$(find_disk2)
-DISK1P1=$(append_disk_part $DISK1 1)
-DISK2P1=$(append_disk_part $DISK2 1)
+DISK1="$(find_disk1)"
+DISK2="$(find_disk2)"
+DISK1P1="$(append_disk_part "$DISK1" 1)"
+DISK2P1="$(append_disk_part "$DISK2" 1)"
+
+# detect if target is systemd
+GENTOO_SYSTEMD="$(
+    (echo "$GENTOO_PROFILE" | grep -q 'systemd' \
+        || echo "$GENTOO_STAGE3" | grep -q 'systemd') \
+        && echo yes || echo no
+)"
+
+# detect kernel config file that should be used for bootstrap
+KERNEL_CONFIG="$(find /etc/kernels -type f -name "config-*.amzn*" | head -n 1)"
+
+# detect current Gentoo profile (from stage3)
+CURRENT_PROFILE="$(readlink /etc/portage/make.profile | sed 's!^.*/profiles/!!')"
+
+# https://www.gentoo.org/support/news-items/2017-12-26-experimental-amd64-17-1-profiles.html
+NO_SYMLINK_LIB_MIGRATION=no
+if [ "$GENTOO_ARCH" = "amd64" ] \
+    && ! echo "$CURRENT_PROFILE" | grep -q '17\.1' \
+    && echo "$GENTOO_PROFILE" | grep -q '17\.1'
+then
+    NO_SYMLINK_LIB_MIGRATION=yes
+fi
 
 ################################################################################
 
 einfo "Updating configuration..."
 
 eexec env-update
-source /etc/profile
+eexec source /etc/profile
 
 ################################################################################
 
@@ -36,41 +61,51 @@ MAKE_OPTS="-j$MAKE_THREADS"
 
 cat >> /etc/portage/make.conf << END
 
-# added by gentoo ami builder
+# added by gentoo-ami-builder
 CFLAGS="-O2 -pipe -mtune=generic"
+CXXFLAGS="$CFLAGS"
 MAKEOPTS="$MAKE_OPTS"
 END
 
 ################################################################################
 
-if [ -e /usr/local/portage ]; then
-    einfo "Fixing local overlay ownership..."
+if [ -n "$GENTOO_PROFILE" ]; then
+    if eon "$NO_SYMLINK_LIB_MIGRATION"; then
+        einfo "Migrating current profile $CURRENT_PROFILE..."
+        einfo "  see more: https://www.gentoo.org/support/news-items/2017-12-26-experimental-amd64-17-1-profiles.html"
 
-    eexec chown -R portage:portage /usr/local/portage
+        eexec emerge -1 $EMERGE_OPTS "app-portage/unsymlink-lib"
+
+        eexec unsymlink-lib --analyze
+        eexec unsymlink-lib --migrate
+        eexec unsymlink-lib --finish
+    fi
+
+    einfo "Switching profile to $GENTOO_PROFILE..."
+    eexec eselect profile set "$GENTOO_PROFILE"
+
+    if eon "$NO_SYMLINK_LIB_MIGRATION"; then
+        # very slow, will trigger rebuild for gcc/glib
+        einfo "Rebuilding packages referencing lib32..."
+        eexec emerge -1 $EMERGE_OPTS /usr/lib/gcc /lib32 /usr/lib32
+    fi
 fi
 
 ################################################################################
 
-einfo "Installing kernel sources..."
+einfo "Rebuilding the world..."
 
-eexec emerge $EMERGE_OPTS sys-kernel/gentoo-sources
+# rebuild whole world with new compiler options, could be probably useful for x32
+# eexec emerge $EMERGE_OPTS -e @world
 
-################################################################################
-
-einfo "Installing genkernel..."
-
-echo "sys-apps/util-linux static-libs" > /etc/portage/package.use/genkernel
-
-eexec emerge $EMERGE_OPTS sys-kernel/genkernel
+eexec emerge $EMERGE_OPTS --update --deep --newuse --with-bdeps=y @world
+eexec emerge $EMERGE_OPTS --depclean
 
 ################################################################################
 
-einfo "Installing kernel..."
+einfo "Tuning kernel configuration..."
 
-AMAZON_KERNEL_CONFIG=$(find /etc/kernels -type f -name "config-*.amzn*" | head -n 1)
-KERNEL_CONFIG="${AMAZON_KERNEL_CONFIG}.bootstrap"
-
-eexec cp -f "$AMAZON_KERNEL_CONFIG" "$KERNEL_CONFIG"
+eexec cp -f "$KERNEL_CONFIG" "$KERNEL_CONFIG.bootstrap"
 
 # genkernel won't autoload module XEN/NVME BLKDEV, so we build them into kernel
 # IXGBEVF: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/sriov-networking.html
@@ -79,7 +114,36 @@ eexec sed -i \
     -e '/CONFIG_NVME_CORE/c\CONFIG_NVME_CORE=y' \
     -e '/CONFIG_BLK_DEV_NVME/c\CONFIG_BLK_DEV_NVME=y' \
     -e '/CONFIG_IXGBEVF/c\CONFIG_IXGBEVF=y' \
-    "$KERNEL_CONFIG"
+    "$KERNEL_CONFIG.bootstrap"
+
+if eon "$GENTOO_SYSTEMD"; then
+    eexec sed -i \
+        -e '/CONFIG_AUTOFS4_FS/c\CONFIG_AUTOFS4_FS=y' \
+        -e '/CONFIG_CHECKPOINT_RESTORE/c\CONFIG_CHECKPOINT_RESTORE=y' \
+        -e '/CONFIG_FANOTIFY/c\CONFIG_FANOTIFY=y' \
+        -e '/CONFIG_CRYPTO_USER_API_HASH/c\CONFIG_CRYPTO_USER_API_HASH=y' \
+        -e '/CONFIG_CGROUP_BPF/c\CONFIG_CGROUP_BPF=y' \
+        "$KERNEL_CONFIG.bootstrap"
+fi
+
+KERNEL_CONFIG="$KERNEL_CONFIG.bootstrap"
+
+################################################################################
+
+einfo "Installing kernel sources..."
+
+eexec emerge $EMERGE_OPTS "sys-kernel/gentoo-sources"
+
+einfo "Installing genkernel..."
+
+if eoff "$GENTOO_SYSTEMD"; then
+    echo "sys-apps/util-linux static-libs" > /etc/portage/package.use/genkernel
+    eexec emerge $EMERGE_OPTS sys-kernel/genkernel
+else
+    eexec emerge $EMERGE_OPTS "sys-kernel/genkernel-next"
+fi
+
+einfo "Installing kernel..."
 
 eexec genkernel all $GENKERNEL_OPTS --makeopts="$MAKE_OPTS" --kernel-config="$KERNEL_CONFIG"
 
@@ -87,13 +151,57 @@ eexec genkernel all $GENKERNEL_OPTS --makeopts="$MAKE_OPTS" --kernel-config="$KE
 
 einfo "Installing ENA kernel module..."
 
-eexec emerge $EMERGE_OPTS $ENA_PKG
+eindent
 
-cat >> /etc/conf.d/modules << END
+einfo "Installing local overlay..."
+einfo "  see more: https://github.com/gentoo/gentoo/pull/9658"
 
-# added by gentoo ami builder
+eexec mkdir -p "/etc/portage/repos.conf"
+
+cat > "/etc/portage/repos.conf/local.conf" << END
+[local]
+location = /usr/local/portage
+masters = gentoo
+auto-sync = no
+END
+
+eexec mkdir -p "/usr/local/portage"
+
+eexec mkdir -p "/usr/local/portage/metadata"
+
+cat > "/usr/local/portage/metadata/layout.conf" << END
+repo-name = local
+masters = gentoo
+thin-manifests = true
+END
+
+eexec mkdir -p "/usr/local/portage/net-misc/ena"
+
+ENA_VERSION="1.5.3"
+
+eexec curl $CURL_OPTS \
+    -o "/usr/local/portage/net-misc/ena/ena-$ENA_VERSION.ebuild" \
+    "https://raw.githubusercontent.com/sormy/gentoo/master/net-misc/ena/ena-$ENA_VERSION.ebuild" \
+    -o "/usr/local/portage/net-misc/ena/Manifest" \
+    "https://raw.githubusercontent.com/sormy/gentoo/master/net-misc/ena/Manifest"
+
+eexec chown -R portage:portage "/usr/local/portage"
+
+einfo "Installing kernel module..."
+
+eexec emerge $EMERGE_OPTS "net-misc/ena"
+
+if eoff "$GENTOO_SYSTEMD"; then
+    cat >> /etc/conf.d/modules << END
+
+# added by gentoo-ami-builder
 modules="ena"
 END
+else
+    echo "ena" > /etc/modules-load.d/ena.conf
+fi
+
+eoutdent
 
 ################################################################################
 
@@ -101,114 +209,101 @@ einfo "Installing bootloader..."
 
 cat >> /etc/portage/make.conf << END
 
-# added by gentoo ami builder
-GRUB_PLATFORMS="$GRUB_PLATFORMS"
+# added by gentoo-ami-builder
+GRUB_PLATFORMS="pc"
 END
 
-eexec emerge $EMERGE_OPTS sys-boot/grub
+eexec emerge $EMERGE_OPTS "sys-boot/grub"
+
+GRUB_CMDLINE_LINUX="net.ifnames=0"
+if eon "$GENTOO_SYSTEMD"; then
+    GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX init=/lib/systemd/systemd"
+fi
 
 cat >> /etc/default/grub << END
 
-# added by gentoo ami builder
+# added by gentoo-ami-builder
 GRUB_DEFAULT=0
 GRUB_TIMEOUT=0
 GRUB_TERMINAL="console serial"
 GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"
-GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0 console=tty0 console=ttyS0,115200n8"
+GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX console=tty0 console=ttyS0,115200n8"
 END
 
-eexec grub-install $DISK2
+eexec grub-install "$DISK2"
 eexec grub-mkconfig -o /boot/grub/grub.cfg
 
-# enable serial console support after boot
-eexec sed -i -e 's/^#\(.* ttyS0 .*$\)/\1/' /etc/inittab
+if eoff "$GENTOO_SYSTEMD"; then
+    # enable serial console support after boot
+    eexec sed -i -e 's/^#\(.* ttyS0 .*$\)/\1/' /etc/inittab
+fi
+
+################################################################################
+
+# Machine ID setup is mandatory for systemd to make it work properly.
+if eon "$GENTOO_SYSTEMD"; then
+    einfo "Configuring systemd..."
+
+    eexec systemd-machine-id-setup
+fi
 
 ################################################################################
 
 einfo "Configuring network..."
 
-eexec ln -s /etc/init.d/net.lo /etc/init.d/net.eth0
-eexec rc-update add net.eth0 default
+if eoff "$GENTOO_SYSTEMD"; then
+    eexec ln -s /etc/init.d/net.lo /etc/init.d/net.eth0
+    eexec rc-update add net.eth0 default
+else
+    cat > /etc/systemd/network/50-dhcp.network << END
+[Match]
+Name=*
+
+[Network]
+DHCP=yes
+END
+    eexec systemctl enable systemd-networkd.service
+
+    eexec ln -snf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+    eexec systemctl enable systemd-resolved.service
+fi
 
 ################################################################################
 
 einfo "Configuring SSH..."
 
 eexec passwd -d -l root
-eexec rc-update add sshd default
+
+if eoff "$GENTOO_SYSTEMD"; then
+    eexec rc-update add sshd default
+else
+    eexec systemctl enable sshd.service
+fi
 
 ################################################################################
 
-einfo "Disabling keymaps service..."
+if eoff "$GENTOO_SYSTEMD"; then
+    einfo "Disabling keymaps service..."
 
-eexec rc-update delete keymaps boot
+    eexec rc-update delete keymaps boot
+fi
 
 ################################################################################
 
 einfo "Installing amazon-ec2-init..."
 
-cat > /etc/init.d/amazon-ec2-init << END
-#!/sbin/openrc-run
+if eoff "$GENTOO_SYSTEMD"; then
+    eexec cp -f /amazon-ec2-init.openrc /etc/init.d/amazon-ec2-init
+    eexec chmod +x /etc/init.d/amazon-ec2-init
+    eexec rc-update add amazon-ec2-init boot
+else
+    eexec cp -f /amazon-ec2-init.script /usr/local/bin/amazon-ec2-init
+    eexec chmod +x /usr/local/bin/amazon-ec2-init
+    eexec cp -f /amazon-ec2-init.service /etc/systemd/system/amazon-ec2-init.service
+    eexec systemctl enable amazon-ec2-init.service
+fi
 
-depend() {
-    before hostname
-    need net.eth0
-}
-
-start() {
-    local lock="/var/lib/amazon-ec2-init.lock"
-    local instance_id="\$(wget -t 2 -T 5 -q -O - http://169.254.169.254/latest/meta-data/instance-id)"
-
-    [ -f "\$lock" ] && [ "\$(cat "\$lock")" = "\$instance_id" ] && exit 0
-
-    einfo "Provisioning instance..."
-
-    eindent
-    provision_hostname
-    provision_ssh_authorized_keys
-    eoutdent
-
-    echo "\$instance_id" > "\$lock"
-}
-
-provision_hostname() {
-    ebegin "Setting hostname"
-    local hostname="\$(wget -t 2 -T 5 -q -O - http://169.254.169.254/latest/meta-data/local-hostname)"
-    echo "hostname=\${hostname}" > /etc/conf.d/hostname
-    eend \$?
-}
-
-provision_ssh_authorized_keys() {
-    ebegin "Importing SSH authorized keys"
-
-    [ -e /root/.ssh ] && rm -rf /root/.ssh
-    mkdir -p /root/.ssh
-    chown root:root /root/.ssh
-    chmod 750 /root/.ssh
-
-    local keys=\$(wget -t 2 -T 5 -q -O - http://169.254.169.254/latest/meta-data/public-keys/ \\
-        | cut -d = -f 1 \\
-        | xargs printf "http://169.254.169.254/latest/meta-data/public-keys/%s/openssh-key\n")
-
-    if [ -n "\${keys}" ]; then
-        wget -t 2 -T 5 -q -O - \${keys} > /root/.ssh/authorized_keys
-        chown root:root /root/.ssh/authorized_keys
-        chmod 640 /root/.ssh/authorized_keys
-    fi
-
-    eend \$?
-}
-END
-
-eexec chmod +x /etc/init.d/amazon-ec2-init
-
-eexec rc-update add amazon-ec2-init boot
-
-################################################################################
-
-einfo "Updating world..."
-
-eexec emerge $EMERGE_OPTS --update --deep --newuse @world
+eexec rm /amazon-ec2-init.*
 
 ################################################################################
 
