@@ -53,6 +53,9 @@ Options:
     --key-pair <value>
         Use this key pair for SSH access (keys should be availavle locally).
 
+    --spot-instance <value>         (default is "$EC2_SPOT_INSTANCE")
+        If a spot instance should be launched instead of on-demand.
+
     --gentoo-stage3 <value>         (default is "$GENTOO_STAGE3")
         Bootstrap using this stage3:
 $(echo "$GENTOO_STAGE3_LIST" | sed 's/^/          * /')
@@ -133,6 +136,7 @@ show_footer() {
 show_phase1_prepare_instance() {
     # global EC2_INSTANCE_ID
     # global EC2_PUBLIC_IP
+    # global EC2_SPOT_INSTANCE
 
     local image_id="$1"
     local amazon_user="$2"
@@ -156,8 +160,22 @@ show_phase1_prepare_instance() {
     snapshot_id=$(get_image_root_volume_snapshot_id "$image_id")
     einfo "Default image's root volume snapshot ID is $snapshot_id"
 
-    einfo "Running instance..."
-    instance_id=$(run_instance "$image_id" "$snapshot_id")
+    if [[ $EC2_SPOT_INSTANCE == true ]]; then
+        einfo "Running spot instance..."
+        spot_request_id=$(run_spot_instance "$image_id" "$snapshot_id")
+
+        sleep 5 # spot request status retrieval could not be immediately available
+
+        wait_until_spot_request_fulfilled "$spot_request_id" 30 \
+            || edie "Unexpected instance state."
+
+        instance_id=$(get_spot_request_instance_id $spot_request_id)
+
+    else
+        einfo "Running instance..."
+        instance_id=$(run_instance "$image_id" "$snapshot_id")
+    fi
+
     einfo "Started instance ID is $instance_id"
 
     sleep 5 # instance status retrieval could be not immediately available

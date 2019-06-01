@@ -43,6 +43,9 @@ EC2_VOLUME_TYPE="gp2"
 # Set to the latest Amazon Linux AMI. You could find it in AWS console.
 EC2_AMAZON_IMAGE_ID="ami-04681a1dbd79675a5" # Amazon Linux 2 AMI as of 2018-08-29
 
+# Default choice of on demand vs spot instance
+EC2_SPOT_INSTANCE="false"
+
 # Default user name to log into Amazon Linux.
 AMAZON_USER="ec2-user"
 
@@ -115,6 +118,7 @@ opt_config "
     --instance-type \
     --amazon-image-id \
     --security-group \
+    --spot-instance \
     --key-pair \
     --gentoo-stage3 \
     --gentoo-profile \
@@ -145,6 +149,7 @@ fi
 # Override default values if they are passed from command line.
 OPT="$(opt_get --instance-type)";       [ -z "$OPT" ] || EC2_INSTANCE_TYPE="$OPT"
 OPT="$(opt_get --amazon-image-id)";     [ -z "$OPT" ] || EC2_AMAZON_IMAGE_ID="$OPT"
+OPT="$(opt_get --spot-instance)";       [ -z "$OPT" ] || EC2_SPOT_INSTANCE="$OPT"
 OPT="$(opt_get --security-group)";      [ -z "$OPT" ] || EC2_SECURITY_GROUP="$OPT"
 OPT="$(opt_get --key-pair)";            [ -z "$OPT" ] || EC2_KEY_PAIR="$OPT"
 OPT="$(opt_get --gentoo-stage3)";       [ -z "$OPT" ] || GENTOO_STAGE3="$OPT"
