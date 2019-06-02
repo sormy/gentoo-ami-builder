@@ -46,6 +46,25 @@ wait_until_instance_will_be_up() {
     done
 }
 
+wait_until_spot_request_fulfilled() {
+    local request_id="$1"
+    local max_attempts="${2:-5}"
+    local interval="${3:-15}"
+
+    local attempt=0
+
+    while : ; do
+        attempt=$(expr $attempt + 1)
+
+        einfo "Waiting until spot request will be fulfilled ($attempt/$max_attempts)..."
+
+        [ "$(get_spot_request_state $request_id)" = "fulfilled" ] && break || true
+        [ $attempt = $max_attempts ] && return 1 || true
+
+        sleep $interval
+    done
+}
+
 wait_until_ssh_will_be_up() {
     # global SSH_OPTS
 
@@ -131,6 +150,24 @@ get_instance_public_ip() {
         --output text
 }
 
+get_spot_request_state() {
+    local request_id="$1"
+
+    eexec -p aws ec2 describe-spot-instance-requests \
+        --spot-instance-request-ids "$request_id" \
+        --query 'SpotInstanceRequests[0].Status.Code' \
+        --output text
+}
+
+get_spot_request_instance_id() {
+    local request_id="$1"
+
+    eexec -p aws ec2 describe-spot-instance-requests \
+        --spot-instance-request-ids "$request_id" \
+        --query 'SpotInstanceRequests[0].InstanceId' \
+        --output text
+}
+
 run_instance() {
     # global EC2_INSTANCE_TYPE
     # global EC2_VOLUME_SIZE
@@ -190,6 +227,63 @@ END
     local result=$?
 
     rm "$device_mapping_file"
+
+    return $result
+}
+
+run_spot_instance() {
+    # global EC2_INSTANCE_TYPE
+    # global EC2_VOLUME_SIZE
+    # global EC2_VOLUME_TYPE
+    # global EC2_KEY_PAIR
+    # global EC2_SECURITY_GROUP
+
+    [ -z "$EC2_INSTANCE_TYPE" ] && edie "Unable to launch EC2 instance without provided Instance Type."
+    [ -z "$EC2_VOLUME_SIZE" ] && edie "Unable to launch EC2 instance without provided Volume Size."
+    [ -z "$EC2_VOLUME_TYPE" ] && edie "Unable to launch EC2 instance without provided Volume Type."
+    [ -z "$EC2_KEY_PAIR" ] && edie "Unable to launch EC2 instance without provided Key Pair."
+    [ -z "$EC2_SECURITY_GROUP" ] && edie "Unable to launch EC2 instance without provided Security Group."
+
+    local image_id="$1"
+    local shapshot_id="$2"
+
+    local spot_specification_file="$(mktemp)"
+
+    cat > "$spot_specification_file" <<- END
+{
+    "SecurityGroups": [ "$EC2_SECURITY_GROUP" ],
+    "BlockDeviceMappings": [
+        {
+            "DeviceName": "/dev/xvda",
+            "Ebs": {
+                "DeleteOnTermination": true,
+                "SnapshotId": "$shapshot_id",
+                "VolumeSize": $EC2_VOLUME_SIZE,
+                "VolumeType": "$EC2_VOLUME_TYPE"
+            }
+        },{
+            "DeviceName": "/dev/xvdb",
+            "Ebs": {
+                "DeleteOnTermination": true,
+                "VolumeSize": $EC2_VOLUME_SIZE,
+                "VolumeType": "$EC2_VOLUME_TYPE"
+            }
+        }
+    ],
+    "ImageId": "$image_id",
+    "InstanceType": "$EC2_INSTANCE_TYPE",
+    "KeyName": "$EC2_KEY_PAIR"
+}
+END
+
+    eexec -p aws ec2 request-spot-instances \
+        --launch-specification "file://$spot_specification_file" \
+        --query 'SpotInstanceRequests[0].SpotInstanceRequestId' \
+        --output text
+
+    local result=$?
+
+    rm "$spot_specification_file"
 
     return $result
 }

@@ -33,6 +33,10 @@
   - ec2:DescribeImages
   - ec2:DeleteSnapshot
   - sts:GetCallerIdentity
+- User should have these additional permissions for building using a spot instance:
+  - ec2:DescribeSpotInstanceRequests
+  - ec2:RequestSpotInstances
+  - iam:CreateServiceLinkedRole
 
 This policy could be used to grant AWS user all needed permissions:
 
@@ -49,7 +53,10 @@ This policy could be used to grant AWS user all needed permissions:
                 "ec2:CreateImage",
                 "ec2:DeregisterImage",
                 "ec2:DescribeImages",
+                "ec2:DescribeSpotInstanceRequests",
                 "ec2:DeleteSnapshot",
+                "ec2:RequestSpotInstances",
+                "iam:CreateServiceLinkedRole",
                 "sts:GetCallerIdentity"
             ],
             "Resource": "*"
