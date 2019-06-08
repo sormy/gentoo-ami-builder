@@ -137,7 +137,8 @@ eexec emerge $EMERGE_OPTS "sys-kernel/gentoo-sources"
 einfo "Installing genkernel..."
 
 if eoff "$GENTOO_SYSTEMD"; then
-    echo "sys-apps/util-linux static-libs" > /etc/portage/package.use/genkernel
+    echo "sys-kernel/genkernel -firmware" > /etc/portage/package.use/genkernel
+    echo "sys-apps/util-linux static-libs" >> /etc/portage/package.use/genkernel
     eexec emerge $EMERGE_OPTS sys-kernel/genkernel
 else
     eexec emerge $EMERGE_OPTS "sys-kernel/genkernel-next"
