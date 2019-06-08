@@ -35,7 +35,7 @@ KERNEL_CONFIG="$(find /etc/kernels -type f -name "config-*.amzn*" | head -n 1)"
 # detect current Gentoo profile (from stage3)
 CURRENT_PROFILE="$(readlink /etc/portage/make.profile | sed 's!^.*/profiles/!!')"
 
-# https://www.gentoo.org/support/news-items/2017-12-26-experimental-amd64-17-1-profiles.html
+# https://www.gentoo.org/support/news-items/2019-06-05-amd64-17-1-profiles-are-now-stable.html
 NO_SYMLINK_LIB_MIGRATION=no
 if [ "$GENTOO_ARCH" = "amd64" ] \
     && ! echo "$CURRENT_PROFILE" | grep -q '17\.1' \
@@ -72,7 +72,7 @@ END
 if [ -n "$GENTOO_PROFILE" ]; then
     if eon "$NO_SYMLINK_LIB_MIGRATION"; then
         einfo "Migrating current profile $CURRENT_PROFILE..."
-        einfo "  see more: https://www.gentoo.org/support/news-items/2017-12-26-experimental-amd64-17-1-profiles.html"
+        einfo "  see more: https://www.gentoo.org/support/news-items/2019-06-05-amd64-17-1-profiles-are-now-stable.html"
 
         eexec emerge -1 $EMERGE_OPTS "app-portage/unsymlink-lib"
 
