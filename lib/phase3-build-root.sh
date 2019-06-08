@@ -153,43 +153,16 @@ einfo "Installing ENA kernel module..."
 
 eindent
 
-einfo "Installing local overlay..."
-einfo "  see more: https://github.com/gentoo/gentoo/pull/9658"
+eexec mkdir -p "/etc/portage/package.accept_keywords"
 
-eexec mkdir -p "/etc/portage/repos.conf"
-
-cat > "/etc/portage/repos.conf/local.conf" << END
-[local]
-location = /usr/local/portage
-masters = gentoo
-auto-sync = no
+cat > "/etc/portage/package.accept_keywords/gentoo-ami-build" << END
+# added by gentoo-ami-builder
+net-misc/ena-driver
 END
-
-eexec mkdir -p "/usr/local/portage"
-
-eexec mkdir -p "/usr/local/portage/metadata"
-
-cat > "/usr/local/portage/metadata/layout.conf" << END
-repo-name = local
-masters = gentoo
-thin-manifests = true
-END
-
-eexec mkdir -p "/usr/local/portage/net-misc/ena"
-
-ENA_VERSION="1.5.3"
-
-eexec curl $CURL_OPTS \
-    -o "/usr/local/portage/net-misc/ena/ena-$ENA_VERSION.ebuild" \
-    "https://raw.githubusercontent.com/sormy/gentoo/master/net-misc/ena/ena-$ENA_VERSION.ebuild" \
-    -o "/usr/local/portage/net-misc/ena/Manifest" \
-    "https://raw.githubusercontent.com/sormy/gentoo/master/net-misc/ena/Manifest"
-
-eexec chown -R portage:portage "/usr/local/portage"
 
 einfo "Installing kernel module..."
 
-eexec emerge $EMERGE_OPTS "net-misc/ena"
+eexec emerge $EMERGE_OPTS "net-misc/ena-driver"
 
 if eoff "$GENTOO_SYSTEMD"; then
     cat >> /etc/conf.d/modules << END
