@@ -75,7 +75,7 @@ and that are compatible with EC2 hardware as of 2018-08-12 are:
 | amd64-hardened+nomultilib         | amd64 | ?       |
 | amd64-hardened-selinux+nomultilib | amd64 | ?       |
 | amd64-hardened-selinux            | amd64 | ?       |
-| amd64-hardened                    | amd64 | ?       |
+| amd64-hardened                    | amd64 | :ok:    |
 | amd64-nomultilib                  | amd64 | ?       |
 | amd64-systemd                     | amd64 | :ok:    |
 | amd64-uclibc-hardened             | amd64 | ?       |
