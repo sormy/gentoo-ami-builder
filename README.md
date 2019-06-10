@@ -160,7 +160,6 @@ Recommendation is to add extra actions needed for target image into phase 3 scri
 ## TODOs
 
 - fix compatibility with x86
-- customizable user phase passed via command line argument
 - fix all shellcheck issues
 - add debugging section in README
 - fix PVM support

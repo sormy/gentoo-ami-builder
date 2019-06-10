@@ -70,6 +70,9 @@ $(echo "$GENTOO_PROFILE_LIST" | sed 's/^/          * /')
     --gentoo-image-name <value>     (default is "$GENTOO_IMAGE_NAME_PREFIX")
         Target Gentoo AMI image name prefix.
 
+    --user-phase <value>
+        Script to run after building the base system but before preparing the AMI.
+
     --resume-instance-id <value>
         (DEBUG) Use already spawned instance for bootstrap.
 
@@ -219,6 +222,7 @@ show_phase1_use_instance() {
 
 show_phase2_prepare_root() {
     # global SSH_OPTS
+    # global USER_PHASE
 
     local amazon_user="$1"
     local public_ip="$2"
@@ -245,6 +249,14 @@ show_phase2_prepare_root() {
     ssh $SSH_OPTS "$amazon_user@$public_ip" \
         "sudo bash -c 'cat > /mnt/gentoo/amazon-ec2-init.script'" \
         < "$SCRIPT_DIR/lib/amazon-ec2-init.script"
+
+    if [[ -n $USER_PHASE ]]; then
+        einfo "Sideloading user phase..."
+
+        ssh $SSH_OPTS "$amazon_user@$public_ip" \
+            "sudo bash -c 'cat > /mnt/gentoo/user-phase'" \
+            < "$USER_PHASE"
+    fi
 
     eoutdent
 }
