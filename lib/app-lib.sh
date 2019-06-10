@@ -194,14 +194,18 @@ run_instance() {
             "DeleteOnTermination": true,
             "SnapshotId": "$shapshot_id",
             "VolumeSize": $EC2_VOLUME_SIZE,
-            "VolumeType": "$EC2_VOLUME_TYPE"
+            "VolumeType": "$EC2_VOLUME_TYPE",
+            "Encrypted": true,
+            "KmsKeyId": "16deb079-afb8-46ab-bbc2-bc1ae541feba"
         }
     },{
         "DeviceName": "/dev/xvdb",
         "Ebs": {
             "DeleteOnTermination": true,
             "VolumeSize": $EC2_VOLUME_SIZE,
-            "VolumeType": "$EC2_VOLUME_TYPE"
+            "VolumeType": "$EC2_VOLUME_TYPE",
+            "Encrypted": true,
+            "KmsKeyId": "16deb079-afb8-46ab-bbc2-bc1ae541feba"
         }
     }
 ]
@@ -259,14 +263,18 @@ run_spot_instance() {
                 "DeleteOnTermination": true,
                 "SnapshotId": "$shapshot_id",
                 "VolumeSize": $EC2_VOLUME_SIZE,
-                "VolumeType": "$EC2_VOLUME_TYPE"
+                "VolumeType": "$EC2_VOLUME_TYPE",
+                "Encrypted": true,
+                "KmsKeyId": "16deb079-afb8-46ab-bbc2-bc1ae541feba"
             }
         },{
             "DeviceName": "/dev/xvdb",
             "Ebs": {
                 "DeleteOnTermination": true,
                 "VolumeSize": $EC2_VOLUME_SIZE,
-                "VolumeType": "$EC2_VOLUME_TYPE"
+                "VolumeType": "$EC2_VOLUME_TYPE",
+                "Encrypted": true,
+                "KmsKeyId": "16deb079-afb8-46ab-bbc2-bc1ae541feba"
             }
         }
     ],
