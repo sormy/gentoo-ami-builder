@@ -70,28 +70,30 @@ This policy could be used to grant AWS user all needed permissions:
 Available Gentoo stage3 tarballs that could be theoretically used for bootstrap
 and that are compatible with EC2 hardware as of 2018-08-12 are:
 
-- **[?]** amd64-hardened+nomultilib (**amd64** arch)
-- **[?]** amd64-hardened-selinux+nomultilib (**amd64** arch)
-- **[?]** amd64-hardened-selinux (**amd64** arch)
-- **[?]** amd64-hardened (**amd64** arch)
-- **[?]** amd64-nomultilib (**amd64** arch)
-- **[V]** amd64-systemd (**amd64** arch)
-- **[?]** amd64-uclibc-hardened (**amd64** arch)
-- **[?]** amd64-uclibc-vanilla (**amd64** arch)
-- **[V]** amd64 (**amd64** arch)
-- **[?]** x32 (**amd64** arch)
-- **[X]** i486 (**x86** arch)
-- **[X]** i686-hardened (**x86** arch)
-- **[X]** i686-systemd (**x86** arch)
-- **[X]** i686-uclibc-hardened (**x86** arch)
-- **[X]** i686-uclibc-vanilla (**x86** arch)
-- **[X]** i686 (**x86** arch)
+| Profile                           | Arch  | Status  |
+|-----------------------------------|-------|---------|
+| amd64-hardened+nomultilib         | amd64 | ?       |
+| amd64-hardened-selinux+nomultilib | amd64 | ?       |
+| amd64-hardened-selinux            | amd64 | ?       |
+| amd64-hardened                    | amd64 | ?       |
+| amd64-nomultilib                  | amd64 | ?       |
+| amd64-systemd                     | amd64 | :ok:    |
+| amd64-uclibc-hardened             | amd64 | ?       |
+| amd64-uclibc-vanilla              | amd64 | ?       |
+| amd64                             | amd64 | :ok:    |
+| x32                               | amd64 | ?       |
+| i486                              | x86   | :x:     |
+| i686-hardened                     | x86   | :x:     |
+| i686-systemd                      | x86   | :x:     |
+| i686-uclibc-hardened              | x86   | :x:     |
+| i686-uclibc-vanilla               | x86   | :x:     |
+| i686                              | x86   | :x:     |
 
 Icons:
 
-- [V] - verified, works
-- [X] - verified, doesn't work in current version, but could be fixed
-- [?] - not verified, could work or not
+- :ok: - verified, works
+- :x: - verified, doesn't work in current version, but could be fixed
+- ? - not verified, could work or not
 
 ## Tested Configurations
 
