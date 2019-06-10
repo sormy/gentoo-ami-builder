@@ -286,3 +286,13 @@ einfo "Disabling instance-specific tweaks..."
 eexec sed -i -e 's/^MAKEOPTS=/# \0/' /etc/portage/make.conf
 
 ################################################################################
+
+if [[ -f /user-phase ]]; then
+    einfo "Executing user phase..."
+
+    eexec chmod +x /user-phase
+    eexec /user-phase
+    eexec rm /user-phase
+fi
+
+################################################################################

@@ -124,6 +124,7 @@ opt_config "
     --gentoo-profile \
     --gentoo-mirror \
     --gentoo-image-name \
+    --user-phase \
     --resume-instance-id \
     --skip-phases \
     --pause-before-reboot \
@@ -156,6 +157,7 @@ OPT="$(opt_get --gentoo-stage3)";       [ -z "$OPT" ] || GENTOO_STAGE3="$OPT"
 OPT="$(opt_get --gentoo-profile)";      [ -z "$OPT" ] || GENTOO_PROFILE="$OPT"
 OPT="$(opt_get --gentoo-mirror)";       [ -z "$OPT" ] || GENTOO_MIRROR="$OPT"
 OPT="$(opt_get --gentoo-image-name)";   [ -z "$OPT" ] || GENTOO_IMAGE_NAME_PREFIX="$OPT"
+OPT="$(opt_get --user-phase)";          [ -z "$OPT" ] || USER_PHASE="$OPT"
 OPT="$(opt_get --resume-instance-id)";  [ -z "$OPT" ] || EC2_INSTANCE_ID="$OPT"
 OPT="$(opt_get --skip-phases)";         [ -z "$OPT" ] || SKIP_PHASES="$OPT"
 OPT="$(opt_get --pause-before-reboot)"; [ -z "$OPT" ] || PAUSE_BEFORE_REBOOT="$OPT"
