@@ -161,7 +161,7 @@ show_phase1_prepare_instance() {
     einfo "Default image's root volume snapshot ID is $snapshot_id"
 
     if [[ $EC2_SPOT_INSTANCE == true ]]; then
-        einfo "Running spot instance..."
+        einfo "Requesting spot instance..."
         spot_request_id=$(run_spot_instance "$image_id" "$snapshot_id")
 
         sleep 5 # spot request status retrieval could not be immediately available
