@@ -69,6 +69,14 @@ END
 
 ################################################################################
 
+einfo "Installing portage repo..."
+
+eexec mkdir -p /etc/portage/repos.conf
+eexec cp -f /usr/share/portage/config/repos.conf /etc/portage/repos.conf/gentoo.conf
+eexec emerge-webrsync
+
+################################################################################
+
 if [ -n "$GENTOO_PROFILE" ]; then
     if eon "$NO_SYMLINK_LIB_MIGRATION"; then
         einfo "Migrating current profile $CURRENT_PROFILE..."
@@ -152,16 +160,12 @@ eexec genkernel all $GENKERNEL_OPTS --makeopts="$MAKE_OPTS" --kernel-config="$KE
 
 einfo "Installing ENA kernel module..."
 
-eindent
-
 eexec mkdir -p "/etc/portage/package.accept_keywords"
 
 cat > "/etc/portage/package.accept_keywords/gentoo-ami-build" << END
 # added by gentoo-ami-builder
 net-misc/ena-driver
 END
-
-einfo "Installing kernel module..."
 
 eexec emerge $EMERGE_OPTS "net-misc/ena-driver"
 
@@ -174,8 +178,6 @@ END
 else
     echo "ena" > /etc/modules-load.d/ena.conf
 fi
-
-eoutdent
 
 ################################################################################
 

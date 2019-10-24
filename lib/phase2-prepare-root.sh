@@ -103,35 +103,6 @@ eoutdent
 
 ################################################################################
 
-einfo "Installing portage repo..."
-
-eindent
-
-einfo "Initializing..."
-
-eexec mkdir -p /mnt/gentoo/etc/portage/repos.conf
-eexec cp -f /mnt/gentoo/usr/share/portage/config/repos.conf \
-    /mnt/gentoo/etc/portage/repos.conf/gentoo.conf
-
-PORTAGE_URL="$GENTOO_MIRROR/snapshots/portage-latest.tar.xz"
-PORTAGE_FILE="$(basename "$PORTAGE_URL")"
-
-einfo "Downloading: $PORTAGE_URL ..."
-
-download_portage_safe "$PORTAGE_URL" "$PORTAGE_FILE"
-
-einfo "Extracting..."
-
-eexec tar xpf "$PORTAGE_FILE" -C usr --xattrs-include='*.*' --numeric-owner
-
-einfo "Cleaning up..."
-
-eexec rm portage-*
-
-eoutdent
-
-################################################################################
-
 einfo "Installing Amazon's kernel configuration..."
 
 eexec mkdir -p /mnt/gentoo/etc/kernels

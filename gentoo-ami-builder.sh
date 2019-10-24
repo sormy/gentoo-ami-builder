@@ -21,7 +21,7 @@ source "$SCRIPT_DIR/lib/distfiles.sh"
 
 APP_NAME="gentoo-ami-builder"
 APP_DESCRIPTION="Gentoo AMI Builder"
-APP_VERSION="1.0.2"
+APP_VERSION="1.0.3"
 
 # Security group with incoming connection available on SSH port (22).
 EC2_SECURITY_GROUP="default"
