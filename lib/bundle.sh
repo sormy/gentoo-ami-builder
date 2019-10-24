@@ -86,7 +86,6 @@ $(
         find_disk1 \
         find_disk2 \
         download_distfile_safe \
-        download_portage_safe \
 )
 elog_set_colors "\$COLOR"
 eindent
