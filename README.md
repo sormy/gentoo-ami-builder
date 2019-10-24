@@ -119,10 +119,10 @@ additional fixes:
 
 ## Caveats
 
-Sometimes Gentoo server could work really slow, around 200Kb/sec, making whole
+Sometimes Gentoo distfile server could work slow, around 200Kb/sec, making whole
 process much slower. You could terminate AMI builder and restart. New request
-will be most-likely served from another instance and will be fast. Another
-option is to change server in settings to the one that you trust.
+will be most-likely served from another distfile server and will be fast. Another
+option is to change distfile server in settings to the one that you trust.
 
 AMI image creation could be also slow, up to 10-15 minutes usually for 20GB disk.
 
