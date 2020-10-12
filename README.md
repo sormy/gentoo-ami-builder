@@ -114,36 +114,36 @@ AMI for your use cases.
 Here are all available Gentoo stage3 tarballs that are theoretically compatible
 with EC2 hardware as of 2020-10-11:
 
-| Stage3                            | Profile | Arch  | Status  | Verified On |
-|-----------------------------------|---------|-------|---------|-------------|
-| amd64-hardened+nomultilib         | default | amd64 | ?       |             |
-| amd64-hardened-selinux+nomultilib | default | amd64 | ?       |             |
-| amd64-hardened-selinux            | default | amd64 | ?       |             |
-| amd64-hardened                    | default | amd64 | :ok:    |             |
-| amd64-musl-hardened               | default | amd64 | ?       |             |
-| amd64-musl-vanilla                | default | amd64 | ?       |             |
-| amd64-nomultilib                  | default | amd64 | ?       |             |
-| amd64-systemd                     | default | amd64 | :ok:    |             |
-| amd64-uclibc-hardened             | default | amd64 | ?       |             |
-| amd64-uclibc-vanilla              | default | amd64 | ?       |             |
-| amd64                             | default | amd64 | :ok:    | 2020-10-11  |
-| x32                               | default | amd64 | ?       |             |
-| i486                              | default | x86   | :x:     |             |
-| i686-hardened                     | default | x86   | :x:     |             |
-| i686-musl-vanilla                 | default | x86   | :x:     |             |
-| i686-systemd                      | default | x86   | :x:     |             |
-| i686-uclibc-hardened              | default | x86   | :x:     |             |
-| i686-uclibc-vanilla               | default | x86   | :x:     |             |
-| i686                              | default | x86   | :x:     |             |
-| arm64-systemd                     | default | arm64 | :x:     |             |
-| arm64                             | default | arm64 | :x:     |             |
+| Stage3                            | Profile | Arch  | Status     | Verified On |
+|-----------------------------------|---------|-------|------------|-------------|
+| amd64-hardened+nomultilib         | default | amd64 | :question: |             |
+| amd64-hardened-selinux+nomultilib | default | amd64 | :question: |             |
+| amd64-hardened-selinux            | default | amd64 | :question: |             |
+| amd64-hardened                    | default | amd64 | :ok:       |             |
+| amd64-musl-hardened               | default | amd64 | :question: |             |
+| amd64-musl-vanilla                | default | amd64 | :question: |             |
+| amd64-nomultilib                  | default | amd64 | :question: |             |
+| amd64-systemd                     | default | amd64 | :ok:       |             |
+| amd64-uclibc-hardened             | default | amd64 | :question: |             |
+| amd64-uclibc-vanilla              | default | amd64 | :question: |             |
+| amd64                             | default | amd64 | :ok:       | 2020-10-11  |
+| x32                               | default | amd64 | :question: |             |
+| i486                              | default | x86   | :x:        |             |
+| i686-hardened                     | default | x86   | :x:        |             |
+| i686-musl-vanilla                 | default | x86   | :x:        |             |
+| i686-systemd                      | default | x86   | :x:        |             |
+| i686-uclibc-hardened              | default | x86   | :x:        |             |
+| i686-uclibc-vanilla               | default | x86   | :x:        |             |
+| i686                              | default | x86   | :x:        |             |
+| arm64-systemd                     | default | arm64 | :x:        |             |
+| arm64                             | default | arm64 | :x:        |             |
 
 Icons:
 
 - :ok: - verified by maintainers, works
 - :x: - verified by maintainers, doesn't work in current version,
   but could be fixed, PRs are welcome
-- ? - not verified, could work or not, please submit a PR if you have confirmed
+- :question: - not verified, could work or not, please submit a PR if you have confirmed
   that it works or if it doesn't work
 
 ## EC2 Instance Type
