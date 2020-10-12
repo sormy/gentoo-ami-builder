@@ -1,9 +1,9 @@
-# Current Gentoo GPG public key IDs: https://www.gentoo.org/downloads/signatures/
-
-# Gentoo Linux Release Engineering (Automated Weekly Release Key)
-# Used for: stage3 / livecd / admincd
-0xBB572E0E2D182910
-
-# Gentoo ebuild repository signing key (Automated Signing Key)
-# Used for: portage
-0xDB6B8C1F96D8BF6D
+# Valid Gentoo GPG key fingerprints as of 2020-10-03
+# https://www.gentoo.org/downloads/signatures/
+13EBBDBEDE7A12775DFDB1BABB572E0E2D182910
+DCD05B71EAB94199527F44ACDB6B8C1F96D8BF6D
+EF9538C9E8E64311A52CDEDFA13D0EF1914E7A72
+D99EAC7379A850BCE47DA5F29E6438C817072058
+ABD00913019D6354BA1D9A132839FE0D796198B1
+18F703D702B1B9591373148C55D3238EC050396E
+2C13823B8237310FA213034930D132FF0FF50EEB

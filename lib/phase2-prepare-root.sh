@@ -34,6 +34,7 @@ eexec ntpd -gq
 if mount | grep -q /mnt/gentoo; then
     einfo "Unmounting partitions..."
 
+    eqexec umount /mnt/gentoo/dev/shm
     eqexec umount /mnt/gentoo/dev/pts
     eqexec umount /mnt/gentoo/dev
     eqexec umount /mnt/gentoo/sys
@@ -124,11 +125,12 @@ eexec cp -f /etc/resolv.conf /mnt/gentoo/etc/
 
 ################################################################################
 
-einfo "Mounting proc/sys/dev/pts..."
+einfo "Mounting proc/sys/dev..."
 
 eexec mount -t proc none /mnt/gentoo/proc
 eexec mount -o bind /sys /mnt/gentoo/sys
 eexec mount -o bind /dev /mnt/gentoo/dev
 eexec mount -o bind /dev/pts /mnt/gentoo/dev/pts
+eexec mount -o bind /dev/shm /mnt/gentoo/dev/shm
 
 ################################################################################

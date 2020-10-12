@@ -33,14 +33,14 @@ fi
 
 einfo "Installing gentoo kernel on first disk..."
 
-eexec cp -f /mnt/gentoo/boot/*-genkernel-* /boot/
+eexec cp -f /mnt/gentoo/boot/*-gentoo-* /boot/
 
 ################################################################################
 
 einfo "Patching bootloader configuration on first disk..."
 
-KERNEL_FILE=$(find /boot -type f -iname "kernel-genkernel-*" | head -n 1)
-INITRAMFS_FILE=$(find /boot -type f -iname "initramfs-genkernel-*" | head -n 1)
+KERNEL_FILE=$(find /boot -type f -iname "vmlinuz-*-gentoo-*" | head -n 1)
+INITRAMFS_FILE=$(find /boot -type f -iname "initramfs-*-gentoo-*" | head -n 1)
 ROOTFS_PART=$(blkid | grep aux-root | sed -e 's/^.* \(UUID=\S\+\).*$/\1/' -e 's/"//g')
 
 [ -n "$KERNEL_FILE" ] || edie "Unable to find kernel file"

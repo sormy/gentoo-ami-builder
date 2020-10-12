@@ -20,16 +20,15 @@
 
 show_help() {
     GENTOO_STAGE3_LIST="$(
-        curl -s http://distfiles.gentoo.org/releases/{x86,amd64}/autobuilds/ \
+        curl -s http://distfiles.gentoo.org/releases/{x86,amd64,arm64}/autobuilds/ \
             | grep -e '"latest-stage3-\S*\.txt"' -o \
-            | sed -e 's/"//g' -e 's/^latest-stage3-//' -e 's/\.txt$//'
+            | sed -e 's/"//g' -e 's/^latest-stage3-//' -e 's/\.txt$//' \
+            | sort | uniq \
     )"
 
     GENTOO_PROFILE_LIST="$(
         curl -s https://raw.githubusercontent.com/gentoo/gentoo/master/profiles/profiles.desc \
-            | sed 's/ \{1,\}/ /g' \
-            | grep -e '^\(amd64\|x86\) ' \
-            | cut -d ' ' -f 2
+            | grep '^\(x86\|amd64\|arm64\)\s' | cut -f 3 | sort | uniq \
     )"
 
 cat << END
@@ -39,29 +38,31 @@ Usage:
     $(basename "$0") [options]
 
 Options:
-    --instance-type <value>         (default is "$EC2_INSTANCE_TYPE")
+    --instance-type <value>         (default is "$EC2_INSTANCE_TYPE_AMD64" for amd64/x86)
+                                    (default is "$EC2_INSTANCE_TYPE_ARM64" for arm64)
         Use specific instance type to bootstrap Gentoo AMI image.
         Instance types: https://aws.amazon.com/ec2/instance-types/
         Pricing: https://aws.amazon.com/ec2/pricing/on-demand/
 
-    --amazon-image-id <value>       (default is "$EC2_AMAZON_IMAGE_ID")
+    --amazon-image-id <value>       (default is "$EC2_AMAZON_IMAGE_ID_AMD64" for amd64/x86)
+                                    (default is "$EC2_AMAZON_IMAGE_ID_ARM64" for arm64)
         Use this Amazon Linux image ID to bootstrap Gentoo.
 
     --security-group <value>        (default is "$EC2_SECURITY_GROUP")
-        Use this security group to bootstrap thru SSH (21 port should be open).
+        Use this security group to bootstrap through SSH (21 port should be open).
 
     --key-pair <value>
-        Use this key pair for SSH access (keys should be availavle locally).
+        Use this key pair for SSH access (keys should be available locally).
 
     --spot-instance <value>         (default is "$EC2_SPOT_INSTANCE")
-        If a spot instance should be launched instead of on-demand.
+        Disable to use on-demand instances instead of spot instances.
 
     --gentoo-stage3 <value>         (default is "$GENTOO_STAGE3")
         Bootstrap using this stage3:
 $(echo "$GENTOO_STAGE3_LIST" | sed 's/^/          * /')
 
     --gentoo-profile <value>        (default is "$GENTOO_PROFILE")
-        Switch to this profile during installation:
+        If set then switch to this profile during installation:
 $(echo "$GENTOO_PROFILE_LIST" | sed 's/^/          * /')
 
     --gentoo-mirror <value>         (default is "$GENTOO_MIRROR")
@@ -163,7 +164,7 @@ show_phase1_prepare_instance() {
     snapshot_id=$(get_image_root_volume_snapshot_id "$image_id")
     einfo "Default image's root volume snapshot ID is $snapshot_id"
 
-    if [[ $EC2_SPOT_INSTANCE == true ]]; then
+    if eon "$EC2_SPOT_INSTANCE"; then
         einfo "Requesting spot instance..."
         spot_request_id=$(run_spot_instance "$image_id" "$snapshot_id")
 
@@ -173,7 +174,6 @@ show_phase1_prepare_instance() {
             || edie "Unexpected instance state."
 
         instance_id=$(get_spot_request_instance_id $spot_request_id)
-
     else
         einfo "Running instance..."
         instance_id=$(run_instance "$image_id" "$snapshot_id")

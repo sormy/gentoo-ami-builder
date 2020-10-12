@@ -147,7 +147,7 @@ einfo "Installing genkernel..."
 if eoff "$GENTOO_SYSTEMD"; then
     echo "sys-kernel/genkernel -firmware" > /etc/portage/package.use/genkernel
     echo "sys-apps/util-linux static-libs" >> /etc/portage/package.use/genkernel
-    eexec emerge $EMERGE_OPTS sys-kernel/genkernel
+    eexec emerge $EMERGE_OPTS "sys-kernel/genkernel"
 else
     eexec emerge $EMERGE_OPTS "sys-kernel/genkernel-next"
 fi
@@ -162,9 +162,10 @@ einfo "Installing ENA kernel module..."
 
 eexec mkdir -p "/etc/portage/package.accept_keywords"
 
-cat > "/etc/portage/package.accept_keywords/gentoo-ami-build" << END
+# full unmask with ** is used to workaround currently missing arm64 for KEYWORDS in ebuild
+cat > "/etc/portage/package.accept_keywords/gentoo-ami-builder" << END
 # added by gentoo-ami-builder
-net-misc/ena-driver
+net-misc/ena-driver **
 END
 
 eexec emerge $EMERGE_OPTS "net-misc/ena-driver"
@@ -238,10 +239,10 @@ Name=*
 [Network]
 DHCP=yes
 END
-    eexec systemctl enable systemd-networkd.service
+    eexec systemctl enable systemd-networkd
 
     eexec ln -snf /run/systemd/resolve/resolv.conf /etc/resolv.conf
-    eexec systemctl enable systemd-resolved.service
+    eexec systemctl start systemd-resolved
 fi
 
 ################################################################################
@@ -253,7 +254,7 @@ eexec passwd -d -l root
 if eoff "$GENTOO_SYSTEMD"; then
     eexec rc-update add sshd default
 else
-    eexec systemctl enable sshd.service
+    eexec systemctl enable sshd
 fi
 
 ################################################################################
@@ -275,8 +276,8 @@ if eoff "$GENTOO_SYSTEMD"; then
 else
     eexec cp -f /amazon-ec2-init.script /usr/local/bin/amazon-ec2-init
     eexec chmod +x /usr/local/bin/amazon-ec2-init
-    eexec cp -f /amazon-ec2-init.service /etc/systemd/system/amazon-ec2-init.service
-    eexec systemctl enable amazon-ec2-init.service
+    eexec cp -f /amazon-ec2-init /etc/systemd/system/amazon-ec2-init
+    eexec systemctl enable amazon-ec2-init
 fi
 
 eexec rm /amazon-ec2-init.*

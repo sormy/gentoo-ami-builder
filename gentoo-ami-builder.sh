@@ -21,7 +21,7 @@ source "$SCRIPT_DIR/lib/distfiles.sh"
 
 APP_NAME="gentoo-ami-builder"
 APP_DESCRIPTION="Gentoo AMI Builder"
-APP_VERSION="1.0.4"
+APP_VERSION="1.0.5"
 
 # Security group with incoming connection available on SSH port (22).
 EC2_SECURITY_GROUP="default"
@@ -32,7 +32,9 @@ EC2_KEY_PAIR=""
 
 # Instance type that will be used as compile host.
 # Recommended is compute-optimized instance type.
-EC2_INSTANCE_TYPE="c5.2xlarge"
+EC2_INSTANCE_TYPE=""
+EC2_INSTANCE_TYPE_AMD64="c5.2xlarge"
+EC2_INSTANCE_TYPE_ARM64="a1.2xlarge"
 
 # Default volume size in GB.
 EC2_VOLUME_SIZE="20"
@@ -41,10 +43,12 @@ EC2_VOLUME_SIZE="20"
 EC2_VOLUME_TYPE="gp2"
 
 # Set to the latest Amazon Linux AMI. You could find it in AWS console.
-EC2_AMAZON_IMAGE_ID="ami-04681a1dbd79675a5" # Amazon Linux 2 AMI as of 2018-08-29
+EC2_AMAZON_IMAGE_ID=""
+EC2_AMAZON_IMAGE_ID_AMD64="ami-0947d2ba12ee1ff75" # Amazon Linux 2 amd64 AMI as of 2020-10-11
+EC2_AMAZON_IMAGE_ID_ARM64="ami-007a607c4abd192db" # Amazon Linux 2 arm64 AMI as of 2020-10-11
 
 # Default choice of on demand vs spot instance
-EC2_SPOT_INSTANCE="false"
+EC2_SPOT_INSTANCE="true"
 
 # Default user name to log into Amazon Linux.
 AMAZON_USER="ec2-user"
@@ -76,7 +80,7 @@ GENTOO_STAGE3="amd64"
 GENTOO_PROFILE=""
 
 # Available Gentoo architectures in EC2 are amd64 and x86.
-GENTOO_ARCH="amd64"
+GENTOO_ARCH=""
 
 # Primary Gentoo mirror to look for Gentoo stage tarballs and portage snapshots.
 GENTOO_MIRROR="http://distfiles.gentoo.org"
@@ -169,11 +173,33 @@ if [ -n "$EC2_INSTANCE_ID" ]; then
     SKIP_PHASES="1${SKIP_PHASES}"
 fi
 
-# Auto detect gentooo architecture based on provided gentoo profile.
-GENTOO_ARCH=$(echo "$GENTOO_STAGE3" | grep -q '^\(amd64\|x32\)' && echo "amd64" || echo "x86")
+# Auto detect Gentoo architecture and base AMI based on provided Gentoo profile.
+case "$GENTOO_STAGE3" in
+    amd64* | x32* )
+        GENTOO_ARCH="amd64"
+        EC2_INSTANCE_TYPE="$EC2_INSTANCE_TYPE_AMD64"
+        EC2_AMAZON_IMAGE_ID="$EC2_AMAZON_IMAGE_ID_AMD64"
+        ;;
+    arm64* )
+        GENTOO_ARCH="arm64"
+        EC2_INSTANCE_TYPE="$EC2_INSTANCE_TYPE_ARM64"
+        EC2_AMAZON_IMAGE_ID="$EC2_AMAZON_IMAGE_ID_ARM64"
+        ;;
+    i486* | i686* )
+        GENTOO_ARCH="x86"
+        EC2_INSTANCE_TYPE="$EC2_INSTANCE_TYPE_AMD64"
+        EC2_AMAZON_IMAGE_ID="$EC2_AMAZON_IMAGE_ID_AMD64"
+        ;;
+    * )
+        edie "Unable to detect Gentoo architecture from stage3 name: $GENTOO_STAGE3"
+esac
 
 # Add profile name into default image name prefix.
-GENTOO_IMAGE_NAME_PREFIX="$GENTOO_IMAGE_NAME_PREFIX ($GENTOO_STAGE3)"
+if [ -z "$GENTOO_PROFILE" ]; then
+    GENTOO_IMAGE_NAME_PREFIX="$GENTOO_IMAGE_NAME_PREFIX ($GENTOO_STAGE3)"
+else
+    GENTOO_IMAGE_NAME_PREFIX="$GENTOO_IMAGE_NAME_PREFIX ($GENTOO_STAGE3 / $GENTOO_PROFILE)"
+fi
 
 # Install error handler that will terminate instance and cleanup temporary files.
 trap app_exit_trap EXIT
@@ -187,10 +213,9 @@ bundle_phase_files
 # Show smalli intro screen with basic information about selected parameters.
 show_intro
 
-# Die on configuration that are well know to not work with current version of the script.
-if [ "$GENTOO_ARCH" = "x86" ]; then
-    eerror "Sorry x86 stage3 is not supported yet."
-    eerror "Please open an issue to get this fixed (not sure if somebody needs x86 in cloud)."
+# Die on configuration that is well know to not work with current version of the script.
+if [ "$GENTOO_ARCH" != "amd64" ]; then
+    eerror "Gentoo $GENTOO_ARCH architecture is not supported yet."
     exit 1
 fi
 
