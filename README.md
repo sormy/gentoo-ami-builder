@@ -322,4 +322,4 @@ Contributions must be licensed under the MIT.
 
 gentoo-ami-builder is licensed under the MIT.
 
-A copy of this license is included in the file LICENSE.
+A copy of this license is included in the file LICENSE.txt
