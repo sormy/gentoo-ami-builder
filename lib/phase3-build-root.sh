@@ -15,12 +15,7 @@
 
 ################################################################################
 
-# we need to detect disk device names and partition names
-# as disk name could vary depending on instance type
-DISK1="$(find_disk1)"
-DISK2="$(find_disk2)"
-DISK1P1="$(append_disk_part "$DISK1" 1)"
-DISK2P1="$(append_disk_part "$DISK2" 1)"
+PRI_ESP_DEV=$(blkid | grep 'PARTLABEL="EFI' | sed 's/:.*$//')
 
 # detect if target is systemd
 GENTOO_SYSTEMD="$(
@@ -63,7 +58,7 @@ cat >> /etc/portage/make.conf << END
 
 # added by gentoo-ami-builder
 CFLAGS="-O2 -pipe -mtune=generic"
-CXXFLAGS="$CFLAGS"
+CXXFLAGS="\$CFLAGS"
 MAKEOPTS="$MAKE_OPTS"
 END
 
@@ -111,6 +106,13 @@ eexec emerge $EMERGE_OPTS --depclean
 
 ################################################################################
 
+if [ -n "$PRI_ESP_DEV" ]; then
+    einfo "Installing vfat support..."
+    eexec emerge $EMERGE_OPTS "sys-fs/dosfstools"
+fi
+
+################################################################################
+
 einfo "Tuning kernel configuration..."
 
 eexec cp -f "$KERNEL_CONFIG" "$KERNEL_CONFIG.bootstrap"
@@ -144,13 +146,10 @@ eexec emerge $EMERGE_OPTS "sys-kernel/gentoo-sources"
 
 einfo "Installing genkernel..."
 
-if eoff "$GENTOO_SYSTEMD"; then
-    echo "sys-kernel/genkernel -firmware" > /etc/portage/package.use/genkernel
-    echo "sys-apps/util-linux static-libs" >> /etc/portage/package.use/genkernel
-    eexec emerge $EMERGE_OPTS "sys-kernel/genkernel"
-else
-    eexec emerge $EMERGE_OPTS "sys-kernel/genkernel-next"
-fi
+# TODO: custom use flags probably have sense only for PC platform
+echo "sys-kernel/genkernel -firmware" > /etc/portage/package.use/genkernel
+echo "sys-apps/util-linux static-libs" >> /etc/portage/package.use/genkernel
+eexec emerge $EMERGE_OPTS "sys-kernel/genkernel"
 
 einfo "Installing kernel..."
 
@@ -184,10 +183,12 @@ fi
 
 einfo "Installing bootloader..."
 
+GRUB_PLATFORMS=$([ -n "$PRI_ESP_DEV" ] && echo efi-64 || echo pc)
+
 cat >> /etc/portage/make.conf << END
 
 # added by gentoo-ami-builder
-GRUB_PLATFORMS="pc"
+GRUB_PLATFORMS="$GRUB_PLATFORMS"
 END
 
 eexec emerge $EMERGE_OPTS "sys-boot/grub"
@@ -207,12 +208,13 @@ GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=
 GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX console=tty0 console=ttyS0,115200n8"
 END
 
-eexec grub-install "$DISK2"
-eexec grub-mkconfig -o /boot/grub/grub.cfg
-
 if eoff "$GENTOO_SYSTEMD"; then
     # enable serial console support after boot
     eexec sed -i -e 's/^#\(.* ttyS0 .*$\)/\1/' /etc/inittab
+
+    # fixes non blocking error: `INIT: Id "f0" respawning too fast: disabled for 5 minutes`
+    # cause: modern Gentoo has enabled serial for Raspberry Pi by default
+    eexec sed -i -e 's/^f0:.*ttyAMA0/#\0/' /etc/inittab
 fi
 
 ################################################################################
@@ -267,20 +269,20 @@ fi
 
 ################################################################################
 
-einfo "Installing amazon-ec2-init..."
+einfo "Installing ec2-init..."
 
 if eoff "$GENTOO_SYSTEMD"; then
-    eexec cp -f /amazon-ec2-init.openrc /etc/init.d/amazon-ec2-init
-    eexec chmod +x /etc/init.d/amazon-ec2-init
-    eexec rc-update add amazon-ec2-init boot
+    eexec cp -f /ec2-init.openrc /etc/init.d/ec2-init
+    eexec chmod +x /etc/init.d/ec2-init
+    eexec rc-update add ec2-init boot
 else
-    eexec cp -f /amazon-ec2-init.script /usr/local/bin/amazon-ec2-init
-    eexec chmod +x /usr/local/bin/amazon-ec2-init
-    eexec cp -f /amazon-ec2-init /etc/systemd/system/amazon-ec2-init
-    eexec systemctl enable amazon-ec2-init
+    eexec cp -f /ec2-init.script /usr/sbin/ec2-init
+    eexec chmod +x /usr/sbin/ec2-init
+    eexec cp -f /ec2-init.service /etc/systemd/system/ec2-init.service
+    eexec systemctl enable ec2-init
 fi
 
-eexec rm /amazon-ec2-init.*
+eexec rm /ec2-init.*
 
 ################################################################################
 
@@ -290,7 +292,7 @@ eexec sed -i -e 's/^MAKEOPTS=/# \0/' /etc/portage/make.conf
 
 ################################################################################
 
-if [[ -f /user-phase ]]; then
+if [ -f /user-phase ]; then
     einfo "Executing user phase..."
 
     eexec chmod +x /user-phase

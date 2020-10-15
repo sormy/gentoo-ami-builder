@@ -6,12 +6,7 @@
 
 ################################################################################
 
-# we need to detect disk device names and partition names
-# as disk name could vary depending on instance type
-DISK1="$(find_disk1)"
-DISK2="$(find_disk2)"
-DISK1P1="$(append_disk_part "$DISK1" 1)"
-DISK2P1="$(append_disk_part "$DISK2" 1)"
+AUX_ROOT_DEV=$(blkid | grep 'LABEL="aux-root"' | sed 's/:.*$//')
 
 # detect if target is systemd
 GENTOO_SYSTEMD="$(
@@ -26,7 +21,7 @@ if ! mount | grep -q "/mnt/gentoo"; then
     einfo "Mounting partitions..."
 
     eexec mkdir -p /mnt/gentoo
-    eexec mount "$DISK2P1" /mnt/gentoo
+    eexec mount "$AUX_ROOT_DEV" /mnt/gentoo
 fi
 
 ################################################################################

@@ -54,7 +54,7 @@ Options:
     --key-pair <value>
         Use this key pair for SSH access (keys should be available locally).
 
-    --spot-instance <value>         (default is "$EC2_SPOT_INSTANCE")
+    --spot-instance <bool>          (default is "$EC2_SPOT_INSTANCE")
         Disable to use on-demand instances instead of spot instances.
 
     --gentoo-stage3 <value>         (default is "$GENTOO_STAGE3")
@@ -79,6 +79,9 @@ $(echo "$GENTOO_PROFILE_LIST" | sed 's/^/          * /')
 
     --skip-phases <value>
         (DEBUG) List of phase digits to skip (no spaces, commas etc).
+
+    --keep-bootstrap-disk <bool>    (default is "$KEEP_BOOTSTRAP_DISK")
+        (DEBUG) Keep bootstrap disk after instance has been terminated.
 
     --pause-before-reboot <bool>    (default is "$PAUSE_BEFORE_REBOOT")
         (DEBUG) Pause process before reboot.
@@ -108,16 +111,16 @@ show_intro() {
 
     eindent
 
-    einfo "Instance Type: $EC2_INSTANCE_TYPE"
-    einfo "Amazon Image ID: $EC2_AMAZON_IMAGE_ID"
+    einfo "Instance Type: $EC2_INSTANCE_TYPE (spot: $EC2_SPOT_INSTANCE)"
+    einfo "Amazon Linux AMI: $EC2_AMAZON_IMAGE_ID"
     einfo "Security Group: $EC2_SECURITY_GROUP"
     einfo "Key Pair: $EC2_KEY_PAIR"
 
-    einfo "Gentoo Source Stage3: $GENTOO_STAGE3 (ARCH: $GENTOO_ARCH)"
+    einfo "Gentoo Stage3: $GENTOO_STAGE3 (ARCH: $GENTOO_ARCH)"
     if [ -n "$GENTOO_PROFILE" ]; then
-        einfo "Gentoo Source Profile: $GENTOO_PROFILE"
+        einfo "Gentoo Profile: $GENTOO_PROFILE"
     fi
-    einfo "Gentoo Target Image: $GENTOO_IMAGE_NAME_PREFIX"
+    einfo "Gentoo AMI Name: $GENTOO_IMAGE_NAME_PREFIX"
 
     eoutdent
 }
@@ -236,21 +239,30 @@ show_phase2_prepare_root() {
         "sudo bash -s" < "$phase_script" \
         || edie "Phase bootstrap has failed"
 
-    einfo "Sideloading amazon-ec2-init..."
+    einfo "Sideloading ec2-init..."
+
+    mkdir -p "$SCRIPT_DIR/cache"
+
+    for file in ec2-init.openrc ec2-init.service ec2-init.script; do
+        if [ ! -f "$SCRIPT_DIR/cache/$file" ]; then
+            curl $CURL_OPTS "https://raw.githubusercontent.com/sormy/ec2-init/master/$file" \
+                -o "$SCRIPT_DIR/cache/$file"
+        fi
+    done
 
     ssh $SSH_OPTS "$amazon_user@$public_ip" \
-        "sudo bash -c 'cat > /mnt/gentoo/amazon-ec2-init.openrc'" \
-        < "$SCRIPT_DIR/lib/amazon-ec2-init.openrc"
+        "sudo bash -c 'cat > /mnt/gentoo/ec2-init.openrc'" \
+        < "$SCRIPT_DIR/cache/ec2-init.openrc"
 
     ssh $SSH_OPTS "$amazon_user@$public_ip" \
-        "sudo bash -c 'cat > /mnt/gentoo/amazon-ec2-init.service'" \
-        < "$SCRIPT_DIR/lib/amazon-ec2-init.service"
+        "sudo bash -c 'cat > /mnt/gentoo/ec2-init.service'" \
+        < "$SCRIPT_DIR/cache/ec2-init.service"
 
     ssh $SSH_OPTS "$amazon_user@$public_ip" \
-        "sudo bash -c 'cat > /mnt/gentoo/amazon-ec2-init.script'" \
-        < "$SCRIPT_DIR/lib/amazon-ec2-init.script"
+        "sudo bash -c 'cat > /mnt/gentoo/ec2-init.script'" \
+        < "$SCRIPT_DIR/cache/ec2-init.script"
 
-    if [[ -n $USER_PHASE ]]; then
+    if [ -n "$USER_PHASE" ]; then
         einfo "Sideloading user phase..."
 
         ssh $SSH_OPTS "$amazon_user@$public_ip" \

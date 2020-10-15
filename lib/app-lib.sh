@@ -58,7 +58,13 @@ wait_until_spot_request_fulfilled() {
 
         einfo "Waiting until spot request will be fulfilled ($attempt/$max_attempts)..."
 
-        [ "$(get_spot_request_state $request_id)" = "fulfilled" ] && break || true
+        local spot_request_status=$(get_spot_request_status "$request_id")
+
+        if [ "$spot_request_status" = "capacity-not-available" ]; then
+            edie "There are no available spot instances with desired instance type. Try later or use on-demand instance with option \"--spot-instance no\"."
+        fi
+
+        [ "$spot_request_status" = "fulfilled" ] && break || true
         [ $attempt = $max_attempts ] && return 1 || true
 
         sleep $interval
@@ -97,7 +103,7 @@ verify_image_state() {
 
 wait_until_image_will_be_available() {
     local image_id="$1"
-    local max_attempts="${2:-20}"
+    local max_attempts="${2:-30}"
     local interval="${3:-60}"
 
     local attempt=0
@@ -150,7 +156,7 @@ get_instance_public_ip() {
         --output text
 }
 
-get_spot_request_state() {
+get_spot_request_status() {
     local request_id="$1"
 
     eexec -p aws ec2 describe-spot-instance-requests \
@@ -199,7 +205,7 @@ run_instance() {
     },{
         "DeviceName": "/dev/xvdb",
         "Ebs": {
-            "DeleteOnTermination": true,
+            "DeleteOnTermination": $(eon "$KEEP_BOOTSTRAP_DISK" && echo false || echo true),
             "VolumeSize": $EC2_VOLUME_SIZE,
             "VolumeType": "$EC2_VOLUME_TYPE"
         }
@@ -264,7 +270,7 @@ run_spot_instance() {
         },{
             "DeviceName": "/dev/xvdb",
             "Ebs": {
-                "DeleteOnTermination": true,
+                "DeleteOnTermination": $(eon "$KEEP_BOOTSTRAP_DISK" && echo false || echo true),
                 "VolumeSize": $EC2_VOLUME_SIZE,
                 "VolumeType": "$EC2_VOLUME_TYPE"
             }

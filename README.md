@@ -2,32 +2,63 @@
 
 ## Features
 
-- One line command to create bootable Gentoo AMI images.
-- Can use spot instances to save up to 50% on bill.
-- One image build costs ~20 cents (as of 2020-10-11) with spot instance.
-- Build time is around 30-40 minutes (on 8 cores instance).
-- Configures all needed block device drivers to boot instance (NVMe etc).
-- Configures all needed network drivers to have network after boot (IXGBEVF, ENA etc).
+- Single simple command line tool to create bootable Gentoo AMI images.
+- Uses spot instances by default to save up to 50% on bill. One image build
+  usually costs less than ~20 cents (as of 2020-10-14).
+- Supports any customization and any kernel version (`aws ec2 import-image`
+  supports only fixed predefined list of kernels).
+- Build time is around ~50 mins for amd64 and ~90 mins for arm64 with default
+  instance types (as of 2020-10-14).
+- Steals kernel config from Amazon Linux so configures all needed kernel modules,
+  including block device drivers to boot instance (NVMe etc) and network drivers
+  to have network after boot (IXGBEVF, ENA etc).
+- Should support all known HVM types of instances (including amd64 and arm64).
 - Minimalistic, only mandatory packages will be installed to get bootable system.
   System eats just ~50 MB of RAM after boot.
-- Has minimalistic amazon-ec2-init script that can bootstrap hostname and ssh keys.
-- Uses amazon provided kernel config as basis.
-- Nice progress reporting with advanced error handling.
-- Should support all known types of instances.
-- Supports HVM virtualization type.
-- Supports OpenRC and Systemd profiles.
-- Supports experimental 17.1 amd64 profiles.
-- It is Gentoo, so you can tune and configure everything.
-- Highly customizable, open source and free :-)
+- Uses minimalistic ec2-init script that can bootstrap hostname, ssh keys and
+  run shell script from EC2 user metadata similar to how cloud-init do that.
+- Nice, not too verbose, progress reporting with advanced verbose error handling.
+- Supports OpenRC and Systemd init systems.
+- Supports profile switching, including upgrade to 17.1 from 17.0 amd64 profiles.
+- Highly customizable (well, it is Gentoo), open source and free :-)
+
+## How it works
+
+The builder replaces Amazon Linux with Gentoo Linux using second volume as
+temporary buffer (aux disk) in a few phases:
+
+- Phase 1: Prepare Instance - Spawn instance with Amazon Linux and two volumes
+- Phase 2: Prepare Root - Prepare second volume and install Gentoo stage3 to it
+- Phase 3: Build Root - Make Gentoo on second volume bootable
+- Phase 4: Switch Root - Reconfigure bootloader and reboot from second volume
+- Phase 5: Migrate Root - Clone second volume to first and reboot from first volume
+- Phase 6: Build AMI - Request AMI from first volume
+
+The build process is orchestrated by builder so ensure that network connection
+is stable, otherwise, the process could crash.
+
+"Build Root" has bottleneck on CPU.
+
+"Migrate Root" has bottleneck on disk IO bandwidth (cloning volume to volume).
+
+"Build AMI" has bottleneck on AWS, not controllable on our side.
+
+Using more powerfull instance type helps to make Phase 3 faster, however, it
+doesn't have noticeable effect on other phases.
+
+The builder is configured to use default instance types that are well-known to
+have good build time / cost ratio. You can pick another instance type to speedup
+the build or to make build process cheaper. Keep in mind, build on instance with
+less than 2GB of RAM will most-likely fail on kernel compilation phase.
 
 ## Prerequisites
 
 - AWS account.
 - AWS user with enabled programmatic access.
-- Locally installed and configured aws cli:
-  <https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html>
-- openssh, bash, curl, grep, sed, coreutils
-- These permissions to run on on-demand instances:
+- Locally installed and configured
+  [aws cli](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html).
+- openssh, bash, curl, coreutils (Linux or macOS)
+- These permissions to build on on-demand instances:
   - ec2:RunInstances
   - ec2:TerminateInstances
   - ec2:DescribeInstances
@@ -36,7 +67,7 @@
   - ec2:DescribeImages
   - ec2:DeleteSnapshot
   - sts:GetCallerIdentity
-- These additional permissions to run on spot instances:
+- These additional permissions to build on spot instances:
   - ec2:DescribeSpotInstanceRequests
   - ec2:RequestSpotInstances
   - iam:CreateServiceLinkedRole
@@ -79,29 +110,25 @@ default Gentoo AMI amd64 / OpenRC image:
 ```shell
 git checkout https://github.com/sormy/gentoo-ami-builder
 cd gentoo-ami-builder
-./gentoo-ami-builder.sh --key-pair "Your Key Pair Name"
+./gentoo-ami-builder.sh --gentoo-stage3 amd64 --key-pair "Your Key Pair Name"
 ```
 
-Wait for ~40 minutes and you will discover an AMI in AWS console that you can
-use to start new instances.
+You will find an AMI in AWS console once the builder will finish the process.
+The image can be used to start any instance for the same platform.
 
 NOTE: Spot instances are used by default to save on bill.
 
-The most important options you can use:
+The most important options:
 
-- `--key-pair` - mandatory to access EC2 builder instance
-- `--gentoo-stage3` - pick what stage3 to use
-- `--gentoo-profile` - switch profile after installing stage3 (rebuild is slow)
-- `--gentoo-image-name` - what name to use to save AMI
+- `--key-pair` - required to access EC2 builder instance over SSH
+- `--gentoo-stage3` - pick what stage3 to use, usually, `amd64` or `arm64`
+- `--gentoo-image-name` - what AMI name prefix to use
 - `--user-phase` - local script to sideload and execute to bootstrap additional
   tools into Gentoo AMI image
 
 Run `gentoo-ami-builder --help` to see full list of available options.
 
-Builder by default is doing a few reboots to confirm that instance is bootable
-and accessible over network.
-
-**Doesn't work? Please file a bug immediately!**
+**Doesn't work? Please file a bug and we will take care of it!**
 
 ## Customization
 
@@ -112,22 +139,22 @@ AMI for your use cases.
 ## Stage3
 
 Here are all available Gentoo stage3 tarballs that are theoretically compatible
-with EC2 hardware as of 2020-10-11:
+with EC2 hardware (as of 2020-10-14):
 
 | Stage3                            | Profile | Arch  | Status     | Verified On |
 |-----------------------------------|---------|-------|------------|-------------|
-| amd64-hardened+nomultilib         | default | amd64 | :question: |             |
-| amd64-hardened-selinux+nomultilib | default | amd64 | :question: |             |
-| amd64-hardened-selinux            | default | amd64 | :question: |             |
-| amd64-hardened                    | default | amd64 | :ok:       |             |
-| amd64-musl-hardened               | default | amd64 | :question: |             |
-| amd64-musl-vanilla                | default | amd64 | :question: |             |
-| amd64-nomultilib                  | default | amd64 | :question: |             |
-| amd64-systemd                     | default | amd64 | :ok:       |             |
-| amd64-uclibc-hardened             | default | amd64 | :question: |             |
-| amd64-uclibc-vanilla              | default | amd64 | :question: |             |
-| amd64                             | default | amd64 | :ok:       | 2020-10-11  |
-| x32                               | default | amd64 | :question: |             |
+| amd64-hardened+nomultilib         | default | amd64 | :ok:       | 2020-10-14  |
+| amd64-hardened-selinux+nomultilib | default | amd64 | :ok:       | 2020-10-14  |
+| amd64-hardened-selinux            | default | amd64 | :ok:       | 2020-10-14  |
+| amd64-hardened                    | default | amd64 | :ok:       | 2020-10-14  |
+| amd64-musl-hardened               | default | amd64 | :x:        | 2020-10-14  |
+| amd64-musl-vanilla                | default | amd64 | :x:        | 2020-10-14  |
+| amd64-nomultilib                  | default | amd64 | :ok:       | 2020-10-14  |
+| amd64-systemd                     | default | amd64 | :ok:       | 2020-10-14  |
+| amd64-uclibc-hardened             | default | amd64 | :x:        | 2020-10-14  |
+| amd64-uclibc-vanilla              | default | amd64 | :x:        | 2020-10-14  |
+| amd64                             | default | amd64 | :ok:       | 2020-10-14  |
+| x32                               | default | amd64 | :x:        | 2020-10-14  |
 | i486                              | default | x86   | :x:        |             |
 | i686-hardened                     | default | x86   | :x:        |             |
 | i686-musl-vanilla                 | default | x86   | :x:        |             |
@@ -135,27 +162,34 @@ with EC2 hardware as of 2020-10-11:
 | i686-uclibc-hardened              | default | x86   | :x:        |             |
 | i686-uclibc-vanilla               | default | x86   | :x:        |             |
 | i686                              | default | x86   | :x:        |             |
-| arm64-systemd                     | default | arm64 | :x:        |             |
-| arm64                             | default | arm64 | :x:        |             |
+| arm64-systemd                     | default | arm64 | :ok:       | 2020-10-14  |
+| arm64                             | default | arm64 | :ok:       | 2020-10-14  |
 
-Icons:
+Status:
 
-- :ok: - verified by maintainers, works
-- :x: - verified by maintainers, doesn't work in current version,
-  but could be fixed, PRs are welcome
-- :question: - not verified, could work or not, please submit a PR if you have confirmed
-  that it works or if it doesn't work
+- :ok: - it works, verified by maintainers
+- :x: - it doesn't work, verified by maintainers (PRs are welcome!)
+- :question: - not verified, could work or not, please submit a PR to update this
+  table if you have tested the stage (PRs for fixes are also welcome!)
+
+Problems:
+
+- x32 - missing x32 ABI support in Amazon Linux (can't chroot)
+- x86 - missing kernel config provided by Amazon (can't build kernel)
+- musl - kernel compilation fails (additional kernel or genkernel fixes are needed)
+- uclibc - gettext compilation fails during world update
 
 ## EC2 Instance Type
 
 The build is tested to be working well on these instance types:
 
-- amd64 / c5.2xlarge (network driver ENA, block device driver NVMe)
-- amd64 / c4.2xlarge (network driver IXGBEVF)
+- amd64 / c5.2xlarge (network ENA, block NVMe, MBR boot)
+- amd64 / c4.2xlarge (network IXGBEVF, MBR boot)
 - amd64 / t2.2xlarge (unlimited cpu credits)
+- arm64 / a1.2xlarge (network ENA, block NVME, EFI boot)
 
 Build process on slow instances could fail (due to lack of RAM) or could take
-a lot of time (due to low CPU performance and low number of cores).
+a lot of time (due to low CPU performance).
 
 ## Init System
 
@@ -178,8 +212,9 @@ By the way, there are some additional fixes performed by this script:
   to be compiled during installation from sources provided by Amazon.
 - Some instances, like C5, have NVMe block devices. NVMe driver need to be
   compiled into kernel to make sure that Gentoo will load it before mounting
-  the root. There is also a set of scripts to properly detect disk device names
-  because they are different for NVMe devices, /dev/nvmeXnY instead of /dev/xvdX.
+  the root.
+
+NOTE: EFA driver is not available yet. PRs are welcome!
 
 ## FAQ
 
@@ -190,9 +225,13 @@ process much slower. You could terminate AMI builder and restart. New request
 will be most-likely served from another distfile server and will be fast. Another
 option is to change distfile server in settings to the one that you trust.
 
+NOTE: Ensure that there are no any not terminated instances running if build
+process has been terminated.
+
 ### AMI image creation is slow
 
-AMI image creation could be slow, up to 10-15 minutes usually for 20GB disk.
+AMI image creation could be slow, usually it is up to 10-20 minutes for 20GB
+volume.
 
 ### What about PVM instances?
 
@@ -203,7 +242,7 @@ HVM instances.
 Read more: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/virtualization_types.html
 
 PVM is not supported at this time but technically can be implemented. Need to
-configure slightly differently bootloader and kernel.
+configure a bit differently bootloader and kernel.
 
 Feel free to submit a PR that adds PVM support.
 
@@ -211,49 +250,71 @@ Feel free to submit a PR that adds PVM support.
 
 x86 architecture is not supported at this time but technically can be implemented.
 
-Feel free to submit a PR that adds x86 support.
+The missing part is kernel configuration provided by Amazon. Yes kernel can be
+configured manually, so... if you need it, please file a feature request.
+
+Please also consider using Gentoo x32 profile that has benefits of both amd64
+and x86 worlds. But it requires a PR to work well as well.
+
+Feel free to submit a PR that adds x86 or/and x32 support.
 
 ### Why can't we just use aws ec2 import-image?
 
 AWS cli has a command `aws ec2 import-image` that is designated to import
-existing disk images, however, there are a few reason why it is not used in this
-builder:
+existing disk images, however, there are a few reasons why it is not used in
+this builder:
 
+- It is picky to image content. It does STRICT validation of image, including
+  kernel version, so you can easy get something like message below:
+  "ClientError: Unsupported kernel version 5.4.66-gentoo-x86_64"
 - It is picky to image format. Only raw images are generally acceptable without
   compatibility issues. For vmdk created with qemu-img it produces this error:
   "ClientError: Disk validation failed [Unsupported VMDK File Format]"
-- It does STRICT validation of image, including kernel version, so you can get:
-  "ClientError: Unsupported kernel version 5.4.66-gentoo-x86_64"
-- It is slower because source image is converted from source format to the format
-  used by AWS.
 - It requires to upload image file to s3 before the process can be executed.
   This also makes process slower and adds additional cost for big images.
+- It is slower because source image is converted from source format to the format
+  used by AWS.
 
-This script doesn't have these limitations!
+This builder script doesn't have these limitations but the procedure it performs
+is more complex.
 
 ## Examples
 
-![Success p1](/screenshots/gentoo-amd64-c5-p1.png?raw=true)
+![Success p1](./examples/gentoo-amd64-c5-p1.png?raw=true)
 
-![Success p2](/screenshots/gentoo-amd64-c5-p2.png?raw=true)
+![Success p2](./examples/gentoo-amd64-c5-p2.png?raw=true)
 
-![Success p3](/screenshots/gentoo-amd64-c5-p3.png?raw=true)
+![Success p3](./examples/gentoo-amd64-c5-p3.png?raw=true)
 
-![Failure](/screenshots/gentoo-x86-genkernel-error.png?raw=true)
+![Failure](./examples/gentoo-x86-genkernel-error.png?raw=true)
+
+Build log examples:
+[amd64](./examples/gentoo-amd64.txt?raw=true)
+[amd64-systemd](./examples/gentoo-amd64-systemd.txt?raw=true)
+[arm64](./examples/gentoo-arm64.txt?raw=true)
+[arm64-systemd](./examples/gentoo-arm64-systemd.txt?raw=true)
 
 ## Reporting Issues
 
-Please use the GitHub issue tracker for any bugs or feature suggestions:
+Gentoo is rolling release system, AWS is also releasing new instance types
+periodically, so the builder that worked Yesterday could stop working Today.
+This application requires periodical maintenance to ensure that it is still
+working on latest Gentoo and new AWS instance type. Please file a bug if you
+are experiencing an issue and we will take care of it.
 
-<https://github.com/sormy/gentoo-ami-builder/issues>
+Please use the GitHub [issue tracker](https://github.com/sormy/gentoo-ami-builder/issues)
+for any bugs or feature suggestions.
 
 ## Contributing
 
 Contributions are very welcome!
 
-Please take a look on `TODO.md` to see what things can be improved.
+Please take a look on [TODO](./TODO.md) to see what things could be improved.
 
 Please submit fixes or improvements as GitHub pull requests!
+
+For code changes please consider doing 4 default builds to verify that there
+are no any regressions: amd64, amd64-systemd, arm64 and arm64-systemd.
 
 Contributions must be licensed under the MIT.
 

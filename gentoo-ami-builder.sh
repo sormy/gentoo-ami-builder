@@ -21,7 +21,7 @@ source "$SCRIPT_DIR/lib/distfiles.sh"
 
 APP_NAME="gentoo-ami-builder"
 APP_DESCRIPTION="Gentoo AMI Builder"
-APP_VERSION="1.0.5"
+APP_VERSION="1.1.0"
 
 # Security group with incoming connection available on SSH port (22).
 EC2_SECURITY_GROUP="default"
@@ -62,10 +62,12 @@ SSH_OPTS="-o ConnectTimeout=5
           -o ChallengeResponseAuthentication=no
           -o UserKnownHostsFile=/dev/null
           -o StrictHostKeyChecking=no
-          -o LogLevel=error"
+          -o LogLevel=error
+          -o ServerAliveInterval=60
+          -o ServerAliveCountMax=3"
 
 # Curl default options.
-CURL_OPTS="--silent"
+CURL_OPTS="--silent --fail"
 
 # Recommended default options for emerge.
 EMERGE_OPTS="--quiet"
@@ -106,6 +108,9 @@ PAUSE_BEFORE_REBOOT="no"
 # Terminate instance on failure (keeping it up could be useful for debug purposes).
 TERMINATE_ON_FAILURE="yes"
 
+# Keep disk2 volume after instance has been terminated (for debug purposes).
+KEEP_BOOTSTRAP_DISK="no"
+
 # Application phase script filenames.
 APP_PHASE2_SCRIPT=""
 APP_PHASE3_SCRIPT=""
@@ -133,6 +138,7 @@ opt_config "
     --skip-phases \
     --pause-before-reboot \
     --terminate-on-failure \
+    --keep-bootstrap-disk \
     --color \
 "
 
@@ -166,6 +172,7 @@ OPT="$(opt_get --resume-instance-id)";  [ -z "$OPT" ] || EC2_INSTANCE_ID="$OPT"
 OPT="$(opt_get --skip-phases)";         [ -z "$OPT" ] || SKIP_PHASES="$OPT"
 OPT="$(opt_get --pause-before-reboot)"; [ -z "$OPT" ] || PAUSE_BEFORE_REBOOT="$OPT"
 OPT="$(opt_get --terminate-on-failure)";[ -z "$OPT" ] || TERMINATE_ON_FAILURE="$OPT"
+OPT="$(opt_get --keep-bootstrap-disk)"; [ -z "$OPT" ] || KEEP_BOOTSTRAP_DISK="$OPT"
 OPT="$(opt_get --color)";               [ -z "$OPT" ] || COLOR="$OPT"
 
 # If resume is enabled then we should skip first phase.
@@ -177,18 +184,18 @@ fi
 case "$GENTOO_STAGE3" in
     amd64* | x32* )
         GENTOO_ARCH="amd64"
-        EC2_INSTANCE_TYPE="$EC2_INSTANCE_TYPE_AMD64"
-        EC2_AMAZON_IMAGE_ID="$EC2_AMAZON_IMAGE_ID_AMD64"
+        EC2_INSTANCE_TYPE="${EC2_INSTANCE_TYPE:-$EC2_INSTANCE_TYPE_AMD64}"
+        EC2_AMAZON_IMAGE_ID="${EC2_AMAZON_IMAGE_ID:-$EC2_AMAZON_IMAGE_ID_AMD64}"
         ;;
     arm64* )
         GENTOO_ARCH="arm64"
-        EC2_INSTANCE_TYPE="$EC2_INSTANCE_TYPE_ARM64"
-        EC2_AMAZON_IMAGE_ID="$EC2_AMAZON_IMAGE_ID_ARM64"
+        EC2_INSTANCE_TYPE="${EC2_INSTANCE_TYPE:-$EC2_INSTANCE_TYPE_ARM64}"
+        EC2_AMAZON_IMAGE_ID="${EC2_AMAZON_IMAGE_ID:-$EC2_AMAZON_IMAGE_ID_ARM64}"
         ;;
     i486* | i686* )
         GENTOO_ARCH="x86"
-        EC2_INSTANCE_TYPE="$EC2_INSTANCE_TYPE_AMD64"
-        EC2_AMAZON_IMAGE_ID="$EC2_AMAZON_IMAGE_ID_AMD64"
+        EC2_INSTANCE_TYPE="${EC2_INSTANCE_TYPE:-$EC2_INSTANCE_TYPE_AMD64}"
+        EC2_AMAZON_IMAGE_ID="${EC2_AMAZON_IMAGE_ID:-$EC2_AMAZON_IMAGE_ID_AMD64}"
         ;;
     * )
         edie "Unable to detect Gentoo architecture from stage3 name: $GENTOO_STAGE3"
@@ -198,8 +205,11 @@ esac
 if [ -z "$GENTOO_PROFILE" ]; then
     GENTOO_IMAGE_NAME_PREFIX="$GENTOO_IMAGE_NAME_PREFIX ($GENTOO_STAGE3)"
 else
-    GENTOO_IMAGE_NAME_PREFIX="$GENTOO_IMAGE_NAME_PREFIX ($GENTOO_STAGE3 / $GENTOO_PROFILE)"
+    GENTOO_IMAGE_NAME_PREFIX="$GENTOO_IMAGE_NAME_PREFIX ($GENTOO_STAGE3 - $GENTOO_PROFILE)"
 fi
+
+# Sanitize image name to be accepted by AWS as AMI name.
+GENTOO_IMAGE_NAME_PREFIX=$(echo "$GENTOO_IMAGE_NAME_PREFIX" | sed 's![^ a-zA-Z0-9()./_-]!-!g')
 
 # Install error handler that will terminate instance and cleanup temporary files.
 trap app_exit_trap EXIT
@@ -214,7 +224,7 @@ bundle_phase_files
 show_intro
 
 # Die on configuration that is well know to not work with current version of the script.
-if [ "$GENTOO_ARCH" != "amd64" ]; then
+if [ "$GENTOO_ARCH" = "x86" ]; then
     eerror "Gentoo $GENTOO_ARCH architecture is not supported yet."
     exit 1
 fi

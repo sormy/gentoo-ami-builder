@@ -13,11 +13,11 @@
 
 ################################################################################
 
-# in debug mode partitions could be still mounted by previous failed attempt
-DISK1="$(find_disk1)"
-DISK2="$(find_disk2)"
-DISK1P1="$(append_disk_part "$DISK1" 1)"
-DISK2P1="$(append_disk_part "$DISK2" 1)"
+PRI_DISK_DEV=$(blkid | grep 'LABEL="/"' | sed 's/p.*$//')
+PRI_ROOT_DEV=$(blkid | grep 'LABEL="/"' | sed 's/:.*$//')
+PRI_ESP_DEV=$(blkid | grep 'PARTLABEL="EFI' | sed 's/:.*$//')
+AUX_DISK_DEV=$(find_disk2)
+AUX_ROOT_DEV=$(append_disk_part "$AUX_DISK_DEV" 1)
 
 ################################################################################
 
@@ -40,36 +40,45 @@ if mount | grep -q /mnt/gentoo; then
     eqexec umount /mnt/gentoo/sys
     eqexec umount /mnt/gentoo/proc
 
+    if [ -n "$PRI_ESP_DEV" ]; then
+        eqexec umount /mnt/gentoo/boot/efi
+    fi
+
     eexec umount /mnt/gentoo
 fi
 
 ################################################################################
 
-einfo "Preparing disk 2..."
+einfo "Preparing aux disk..."
 
 eindent
 
 einfo "Creating partitions..."
 
-echo ";" | eqexec sfdisk --label dos "$DISK2"
-while [ ! -e "$DISK2P1" ]; do sleep 1; done
+# create partition with the same size on first disk to use `dd` later
+sfdisk --dump "$PRI_DISK_DEV" | grep "$PRI_ROOT_DEV\b" | grep -o 'size=[^,]*' | \
+    eexec sfdisk --label gpt "$AUX_DISK_DEV"
+
+einfo "Waiting for partitions..."
+
+while [ ! -e "$AUX_ROOT_DEV" ]; do sleep 1; done
 
 einfo "Formatting partitions..."
 
-eexec mkfs.ext4 -q "$DISK2P1"
+eexec mkfs.ext4 "$AUX_ROOT_DEV"
 
 einfo "Labeling partitions..."
 
-eexec e2label "$DISK2P1" aux-root
+eexec e2label "$AUX_ROOT_DEV" aux-root
 
 eoutdent
 
 ################################################################################
 
-einfo "Mounting disk 2..."
+einfo "Mounting aux disk..."
 
 eexec mkdir -p /mnt/gentoo
-eexec mount "$DISK2P1" /mnt/gentoo
+eexec mount "$AUX_ROOT_DEV" /mnt/gentoo
 
 ################################################################################
 
@@ -117,6 +126,12 @@ cat >> /mnt/gentoo/etc/fstab << END
 LABEL=aux-root / ext4 noatime 0 1
 END
 
+if [ -n "$PRI_ESP_DEV" ]; then
+    cat >> /mnt/gentoo/etc/fstab << END
+PARTLABEL=EFI\040System\040Partition /boot/efi vfat noauto,noatime 0 2
+END
+fi
+
 ################################################################################
 
 einfo "Copying network options..."
@@ -134,3 +149,9 @@ eexec mount -o bind /dev/pts /mnt/gentoo/dev/pts
 eexec mount -o bind /dev/shm /mnt/gentoo/dev/shm
 
 ################################################################################
+
+if [ -n "$PRI_ESP_DEV" ]; then
+    einfo "Mounting ESP..."
+    eexec mkdir -p /mnt/gentoo/boot/efi
+    eexec mount -o bind /boot/efi /mnt/gentoo/boot/efi
+fi
