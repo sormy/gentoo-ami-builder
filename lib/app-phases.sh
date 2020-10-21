@@ -223,6 +223,47 @@ show_phase1_use_instance() {
     eoutdent
 }
 
+show_phase1_prepare_x32() {
+    # global SSH_OPTS
+    # global USER_PHASE
+
+    local instance_id="$1"
+    local amazon_user="$2"
+    local public_ip="$3"
+    local phase_script="$4"
+
+    einfo "PHASE 1x: Prepare x32"
+
+    eindent
+
+    # amazon user has no superuser privileges so we have to use sudo
+    ssh $SSH_OPTS "$amazon_user@$public_ip" \
+        "sudo bash -s" < "$phase_script" \
+        || edie "Phase bootstrap has failed"
+
+    einfo "Rebooting..."
+
+    if eon "$PAUSE_BEFORE_REBOOT"; then
+        signal
+        press_any_key_to_continue
+    fi
+
+    # reboot will terminate ssh session so this command will fail on success
+    # amazon user has no superuser privileges so we have to use sudo
+    ssh $SSH_OPTS "$amazon_user@$public_ip" \
+        "sudo reboot" || true
+
+    sleep 30
+
+    wait_until_instance_will_be_up "$instance_id" \
+        || edie "Unexpected instance state."
+
+    wait_until_ssh_will_be_up "$amazon_user" "$public_ip" \
+        || edie "Unable to establish SSH connection."
+
+    eoutdent
+}
+
 show_phase2_prepare_root() {
     # global SSH_OPTS
     # global USER_PHASE

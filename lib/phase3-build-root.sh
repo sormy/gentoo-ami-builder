@@ -120,19 +120,25 @@ eexec cp -f "$KERNEL_CONFIG" "$KERNEL_CONFIG.bootstrap"
 # genkernel won't autoload module XEN/NVME BLKDEV, so we build them into kernel
 # IXGBEVF: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/sriov-networking.html
 eexec sed -i \
-    -e '/CONFIG_XEN_BLKDEV_FRONTEND/c\CONFIG_XEN_BLKDEV_FRONTEND=y' \
-    -e '/CONFIG_NVME_CORE/c\CONFIG_NVME_CORE=y' \
-    -e '/CONFIG_BLK_DEV_NVME/c\CONFIG_BLK_DEV_NVME=y' \
-    -e '/CONFIG_IXGBEVF/c\CONFIG_IXGBEVF=y' \
+    -e '/CONFIG_XEN_BLKDEV_FRONTEND[ =]/c\CONFIG_XEN_BLKDEV_FRONTEND=y' \
+    -e '/CONFIG_NVME_CORE[ =]/c\CONFIG_NVME_CORE=y' \
+    -e '/CONFIG_BLK_DEV_NVME[ =]/c\CONFIG_BLK_DEV_NVME=y' \
+    -e '/CONFIG_IXGBEVF[ =]/c\CONFIG_IXGBEVF=y' \
     "$KERNEL_CONFIG.bootstrap"
 
 if eon "$GENTOO_SYSTEMD"; then
     eexec sed -i \
-        -e '/CONFIG_AUTOFS4_FS/c\CONFIG_AUTOFS4_FS=y' \
-        -e '/CONFIG_CHECKPOINT_RESTORE/c\CONFIG_CHECKPOINT_RESTORE=y' \
-        -e '/CONFIG_FANOTIFY/c\CONFIG_FANOTIFY=y' \
-        -e '/CONFIG_CRYPTO_USER_API_HASH/c\CONFIG_CRYPTO_USER_API_HASH=y' \
-        -e '/CONFIG_CGROUP_BPF/c\CONFIG_CGROUP_BPF=y' \
+        -e '/CONFIG_AUTOFS4_FS[ =]/c\CONFIG_AUTOFS4_FS=y' \
+        -e '/CONFIG_CHECKPOINT_RESTORE[ =]/c\CONFIG_CHECKPOINT_RESTORE=y' \
+        -e '/CONFIG_FANOTIFY[ =]/c\CONFIG_FANOTIFY=y' \
+        -e '/CONFIG_CRYPTO_USER_API_HASH[ =]/c\CONFIG_CRYPTO_USER_API_HASH=y' \
+        -e '/CONFIG_CGROUP_BPF[ =]/c\CONFIG_CGROUP_BPF=y' \
+        "$KERNEL_CONFIG.bootstrap"
+fi
+
+if [ "$GENTOO_STAGE3" = "x32" ]; then
+    eexec sed -i \
+        -e '/CONFIG_X86_X32[ =]/c\CONFIG_X86_X32=y' \
         "$KERNEL_CONFIG.bootstrap"
 fi
 

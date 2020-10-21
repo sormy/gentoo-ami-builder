@@ -84,9 +84,12 @@ eoutdent
 einfo "Cleaning primary disk..."
 
 # clear ec2 init state if available
-if [ -e "/mnt/gentoo/var/lib/ec2-init.lock" ]; then
-    eexec rm "/mnt/gentoo/var/lib/ec2-init.lock"
-fi
+eqexec rm "/mnt/gentoo/var/lib/ec2-init.lock"
+eqexec rm "/mnt/gentoo/var/lib/ec2-init.user-data"
+eqexec rm "/mnt/gentoo/var/log/ec2-init.log"
+
+# clear ssh authorized keys
+eqexec rm "/mnt/gentoo/root/.ssh/authorized_keys"
 
 # reset hostname
 if [ -e "/mnt/gentoo/etc/conf.d/hostname" ]; then

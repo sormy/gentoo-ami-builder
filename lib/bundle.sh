@@ -102,6 +102,9 @@ bundle_phase_files() {
     APP_PHASE2_SCRIPT=$(mktemp)
     bundle_phase "$SCRIPT_DIR/lib/phase2-prepare-root.sh" "$elib_file" "$APP_PHASE2_SCRIPT"
 
+    APP_PHASE1_X32_SCRIPT=$(mktemp)
+    bundle_phase "$SCRIPT_DIR/lib/phase1-prepare-x32.sh" "$elib_file" "$APP_PHASE1_X32_SCRIPT"
+
     APP_PHASE3_SCRIPT=$(mktemp)
     bundle_phase "$SCRIPT_DIR/lib/phase3-build-root.sh" "$elib_file" "$APP_PHASE3_SCRIPT"
 

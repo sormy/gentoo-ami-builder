@@ -141,29 +141,29 @@ AMI for your use cases.
 Here are all available Gentoo stage3 tarballs that are theoretically compatible
 with EC2 hardware (as of 2020-10-14):
 
-| Stage3                            | Profile | Arch  | Status     | Verified On |
-|-----------------------------------|---------|-------|------------|-------------|
-| amd64-hardened+nomultilib         | default | amd64 | :ok:       | 2020-10-14  |
-| amd64-hardened-selinux+nomultilib | default | amd64 | :ok:       | 2020-10-14  |
-| amd64-hardened-selinux            | default | amd64 | :ok:       | 2020-10-14  |
-| amd64-hardened                    | default | amd64 | :ok:       | 2020-10-14  |
-| amd64-musl-hardened               | default | amd64 | :x:        | 2020-10-14  |
-| amd64-musl-vanilla                | default | amd64 | :x:        | 2020-10-14  |
-| amd64-nomultilib                  | default | amd64 | :ok:       | 2020-10-14  |
-| amd64-systemd                     | default | amd64 | :ok:       | 2020-10-14  |
-| amd64-uclibc-hardened             | default | amd64 | :x:        | 2020-10-14  |
-| amd64-uclibc-vanilla              | default | amd64 | :x:        | 2020-10-14  |
-| amd64                             | default | amd64 | :ok:       | 2020-10-14  |
-| x32                               | default | amd64 | :x:        | 2020-10-14  |
-| i486                              | default | x86   | :x:        |             |
-| i686-hardened                     | default | x86   | :x:        |             |
-| i686-musl-vanilla                 | default | x86   | :x:        |             |
-| i686-systemd                      | default | x86   | :x:        |             |
-| i686-uclibc-hardened              | default | x86   | :x:        |             |
-| i686-uclibc-vanilla               | default | x86   | :x:        |             |
-| i686                              | default | x86   | :x:        |             |
-| arm64-systemd                     | default | arm64 | :ok:       | 2020-10-14  |
-| arm64                             | default | arm64 | :ok:       | 2020-10-14  |
+| Stage3                            | Profile | Arch  | Status     | Last Verified         |
+|-----------------------------------|---------|-------|------------|-----------------------|
+| amd64-hardened+nomultilib         | default | amd64 | :ok:       | v1.1.0 on 2020-10-14  |
+| amd64-hardened-selinux+nomultilib | default | amd64 | :ok:       | v1.1.0 on 2020-10-14  |
+| amd64-hardened-selinux            | default | amd64 | :ok:       | v1.1.0 on 2020-10-14  |
+| amd64-hardened                    | default | amd64 | :ok:       | v1.1.0 on 2020-10-14  |
+| amd64-musl-hardened               | default | amd64 | :x:        | v1.1.0 on 2020-10-14  |
+| amd64-musl-vanilla                | default | amd64 | :x:        | v1.1.0 on 2020-10-14  |
+| amd64-nomultilib                  | default | amd64 | :ok:       | v1.1.0 on 2020-10-14  |
+| amd64-systemd                     | default | amd64 | :ok:       | v1.1.0 on 2020-10-14  |
+| amd64-uclibc-hardened             | default | amd64 | :x:        | v1.1.0 on 2020-10-14  |
+| amd64-uclibc-vanilla              | default | amd64 | :x:        | v1.1.0 on 2020-10-14  |
+| amd64                             | default | amd64 | :ok:       | v1.1.0 on 2020-10-14  |
+| x32                               | default | amd64 | :ok:       | v1.1.1 on 2020-10-20  |
+| i486                              | default | x86   | :x:        |                       |
+| i686-hardened                     | default | x86   | :x:        |                       |
+| i686-musl-vanilla                 | default | x86   | :x:        |                       |
+| i686-systemd                      | default | x86   | :x:        |                       |
+| i686-uclibc-hardened              | default | x86   | :x:        |                       |
+| i686-uclibc-vanilla               | default | x86   | :x:        |                       |
+| i686                              | default | x86   | :x:        |                       |
+| arm64-systemd                     | default | arm64 | :ok:       | v1.1.0 on 2020-10-14  |
+| arm64                             | default | arm64 | :ok:       | v1.1.0 on 2020-10-14  |
 
 Status:
 
@@ -174,10 +174,9 @@ Status:
 
 Problems:
 
-- x32 - missing x32 ABI support in Amazon Linux (can't chroot)
-- x86 - missing kernel config provided by Amazon (can't build kernel)
-- musl - kernel compilation fails (additional kernel or genkernel fixes are needed)
-- uclibc - gettext compilation fails during world update
+- x86 (stable) - needs x86 kernel config generated from amd64 config
+- musl (exp) - kernel compilation fails (dive deep)
+- uclibc (exp) - gettext compilation fails during world update (dive deep)
 
 ## EC2 Instance Type
 
@@ -250,13 +249,10 @@ Feel free to submit a PR that adds PVM support.
 
 x86 architecture is not supported at this time but technically can be implemented.
 
-The missing part is kernel configuration provided by Amazon. Yes kernel can be
-configured manually, so... if you need it, please file a feature request.
+Please also consider using Gentoo x32 stage3 that has benefits of both amd64
+and x86 worlds.
 
-Please also consider using Gentoo x32 profile that has benefits of both amd64
-and x86 worlds. But it requires a PR to work well as well.
-
-Feel free to submit a PR that adds x86 or/and x32 support.
+Feel free to submit a PR that adds x86 support.
 
 ### Why can't we just use aws ec2 import-image?
 
@@ -293,6 +289,7 @@ Build log examples:
 [amd64-systemd](./examples/gentoo-amd64-systemd.txt?raw=true)
 [arm64](./examples/gentoo-arm64.txt?raw=true)
 [arm64-systemd](./examples/gentoo-arm64-systemd.txt?raw=true)
+[x32](./examples/gentoo-x32.txt?raw=true)
 
 ## Reporting Issues
 

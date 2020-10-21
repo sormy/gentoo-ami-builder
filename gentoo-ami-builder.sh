@@ -21,7 +21,7 @@ source "$SCRIPT_DIR/lib/distfiles.sh"
 
 APP_NAME="gentoo-ami-builder"
 APP_DESCRIPTION="Gentoo AMI Builder"
-APP_VERSION="1.1.0"
+APP_VERSION="1.1.1"
 
 # Security group with incoming connection available on SSH port (22).
 EC2_SECURITY_GROUP="default"
@@ -112,6 +112,7 @@ TERMINATE_ON_FAILURE="yes"
 KEEP_BOOTSTRAP_DISK="no"
 
 # Application phase script filenames.
+APP_PHASE1_X32_SCRIPT=""
 APP_PHASE2_SCRIPT=""
 APP_PHASE3_SCRIPT=""
 APP_PHASE4_SCRIPT=""
@@ -236,6 +237,12 @@ show_header
 if ! is_phase_skipped 1; then
     # sets EC2_INSTANCE_ID and EC2_PUBLIC_IP
     show_phase1_prepare_instance "$EC2_AMAZON_IMAGE_ID" "$AMAZON_USER"
+
+    # rebuild kernel for x32 if needed
+    if [ "$GENTOO_STAGE3" = "x32" ]; then
+        show_phase1_prepare_x32 "$EC2_INSTANCE_ID" "$AMAZON_USER" \
+            "$EC2_PUBLIC_IP" "$APP_PHASE1_X32_SCRIPT"
+    fi
 else
     # try to use existing instance, should be passed from command line
     show_phase1_use_instance

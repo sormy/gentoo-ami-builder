@@ -51,3 +51,35 @@ ssh noise:
  *   Waiting until SSH will be up...
 ssh: connect to host 34.200.218.187 port 22: Connection refused
 ```
+
+---
+
+Test if this works better than sed:
+
+```sh
+    eexec /usr/src/linux/scripts/config \
+        --file "$KERNEL_CONFIG.bootstrap" \
+        --enable AUTOFS4_FS \
+        --enable CHECKPOINT_RESTORE \
+        --enable FANOTIFY \
+        --enable CRYPTO_USER_API_HASH \
+        --enable CGROUP_BPF
+```
+
+---
+
+Test if this works well for x86 stages.
+
+Convert kernel config from x86_64 to x86:
+
+```sh
+sed -i \
+  -e '/CONFIG_64BIT[ =]/c\CONFIG_64BIT=n' \
+  -e '/CONFIG_X86_64[ =]/c\CONFIG_X86_64=n' \
+  -e '/CONFIG_X86_32[ =]/c\CONFIG_X86_32=n' \
+  -e '/CONFIG_OUTPUT_FORMAT[ =]/c\CONFIG_OUTPUT_FORMAT="elf32-i386"' \
+  -e '/CONFIG_ARCH_DEFCONFIG[ =]/c\CONFIG_ARCH_DEFCONFIG="arch/x86/configs/i386_defconfig"' \
+  .config
+
+yes "" | make oldconfig
+```
