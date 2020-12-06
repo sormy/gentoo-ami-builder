@@ -157,9 +157,21 @@ then submit an issue on the tracker.
 
 ## Customization
 
+### Custom user phase build script
+
 Use `--user-phase` option to pass custom script that can do any kind of special
 configuration, install needed packages, anything that is needed to make a base
 AMI for your use cases.
+
+### Custom provisioning script
+
+Produced image has `ec2-init` service that automatically do a provisioning for
+hostname, ssh keys and can also execute custom provisioning shell script provided
+using EC2 metadata.
+
+Read more here about `ec2-init`: https://github.com/sormy/ec2-init#module-exec
+
+Read more about EC2 metadata: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-add-user-data.html
 
 ## Stage3
 
