@@ -21,7 +21,10 @@ source "$SCRIPT_DIR/lib/distfiles.sh"
 
 APP_NAME="gentoo-ami-builder"
 APP_DESCRIPTION="Gentoo AMI Builder"
-APP_VERSION="1.1.1"
+APP_VERSION="1.1.2"
+
+# AWS region.
+AWS_REGION="${AWS_DEFAULT_REGION:-us-east-1}"
 
 # Security group with incoming connection available on SSH port (22).
 EC2_SECURITY_GROUP="default"
@@ -36,16 +39,17 @@ EC2_INSTANCE_TYPE=""
 EC2_INSTANCE_TYPE_AMD64="c5.2xlarge"
 EC2_INSTANCE_TYPE_ARM64="a1.2xlarge"
 
+# Instance architecture: i386, x86_64, arm64.
+EC2_ARCH=""
+
 # Default volume size in GB.
 EC2_VOLUME_SIZE="20"
 
 # Default volume type.
 EC2_VOLUME_TYPE="gp2"
 
-# Set to the latest Amazon Linux AMI. You could find it in AWS console.
+# Set to the latest Amazon Linux AMI for selected architecture and region.
 EC2_AMAZON_IMAGE_ID=""
-EC2_AMAZON_IMAGE_ID_AMD64="ami-0947d2ba12ee1ff75" # Amazon Linux 2 amd64 AMI as of 2020-10-11
-EC2_AMAZON_IMAGE_ID_ARM64="ami-007a607c4abd192db" # Amazon Linux 2 arm64 AMI as of 2020-10-11
 
 # Default choice of on demand vs spot instance
 EC2_SPOT_INSTANCE="true"
@@ -125,6 +129,7 @@ EC2_PUBLIC_IP=""
 set -e
 
 opt_config "
+    --region \
     --instance-type \
     --amazon-image-id \
     --security-group \
@@ -159,6 +164,7 @@ if [ "$(opt_cmd)" = "version" ]; then
 fi
 
 # Override default values if they are passed from command line.
+OPT="$(opt_get --region)";              [ -z "$OPT" ] || AWS_REGION="$OPT"
 OPT="$(opt_get --instance-type)";       [ -z "$OPT" ] || EC2_INSTANCE_TYPE="$OPT"
 OPT="$(opt_get --amazon-image-id)";     [ -z "$OPT" ] || EC2_AMAZON_IMAGE_ID="$OPT"
 OPT="$(opt_get --spot-instance)";       [ -z "$OPT" ] || EC2_SPOT_INSTANCE="$OPT"
@@ -186,17 +192,17 @@ case "$GENTOO_STAGE3" in
     amd64* | x32* )
         GENTOO_ARCH="amd64"
         EC2_INSTANCE_TYPE="${EC2_INSTANCE_TYPE:-$EC2_INSTANCE_TYPE_AMD64}"
-        EC2_AMAZON_IMAGE_ID="${EC2_AMAZON_IMAGE_ID:-$EC2_AMAZON_IMAGE_ID_AMD64}"
+        EC2_ARCH="x86_64"
         ;;
     arm64* )
         GENTOO_ARCH="arm64"
         EC2_INSTANCE_TYPE="${EC2_INSTANCE_TYPE:-$EC2_INSTANCE_TYPE_ARM64}"
-        EC2_AMAZON_IMAGE_ID="${EC2_AMAZON_IMAGE_ID:-$EC2_AMAZON_IMAGE_ID_ARM64}"
+        EC2_ARCH="arm64"
         ;;
     i486* | i686* )
         GENTOO_ARCH="x86"
         EC2_INSTANCE_TYPE="${EC2_INSTANCE_TYPE:-$EC2_INSTANCE_TYPE_AMD64}"
-        EC2_AMAZON_IMAGE_ID="${EC2_AMAZON_IMAGE_ID:-$EC2_AMAZON_IMAGE_ID_AMD64}"
+        EC2_ARCH="i386"
         ;;
     * )
         edie "Unable to detect Gentoo architecture from stage3 name: $GENTOO_STAGE3"
@@ -236,7 +242,7 @@ show_header
 # Run phase 1 if enabled: Prepare Instance
 if ! is_phase_skipped 1; then
     # sets EC2_INSTANCE_ID and EC2_PUBLIC_IP
-    show_phase1_prepare_instance "$EC2_AMAZON_IMAGE_ID" "$AMAZON_USER"
+    show_phase1_prepare_instance "$EC2_AMAZON_IMAGE_ID" "$EC2_ARCH" "$AMAZON_USER"
 
     # rebuild kernel for x32 if needed
     if [ "$GENTOO_STAGE3" = "x32" ]; then

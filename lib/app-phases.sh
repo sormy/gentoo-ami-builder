@@ -38,18 +38,24 @@ Usage:
     $(basename "$0") [options]
 
 Options:
+    --region <value>                (default is "us-east-1")
+        Application tries to guess region by AWS_DEFAULT_REGION environment variable
+        with fallback to us-east-1 if AWS_DEFAULT_REGION is not defined.
+        List of available regions can be located here:
+        https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html
+
     --instance-type <value>         (default is "$EC2_INSTANCE_TYPE_AMD64" for amd64/x86)
                                     (default is "$EC2_INSTANCE_TYPE_ARM64" for arm64)
         Use specific instance type to bootstrap Gentoo AMI image.
         Instance types: https://aws.amazon.com/ec2/instance-types/
         Pricing: https://aws.amazon.com/ec2/pricing/on-demand/
 
-    --amazon-image-id <value>       (default is "$EC2_AMAZON_IMAGE_ID_AMD64" for amd64/x86)
-                                    (default is "$EC2_AMAZON_IMAGE_ID_ARM64" for arm64)
+    --amazon-image-id <value>       (default is "$EC2_AMAZON_IMAGE_ID")
         Use this Amazon Linux image ID to bootstrap Gentoo.
+        Automatically detected if not defined.
 
     --security-group <value>        (default is "$EC2_SECURITY_GROUP")
-        Use this security group to bootstrap through SSH (21 port should be open).
+        Use this security group to bootstrap through SSH (22 port should be open).
 
     --key-pair <value>
         Use this key pair for SSH access (keys should be available locally).
@@ -111,8 +117,9 @@ show_intro() {
 
     eindent
 
+    einfo "AWS Region: $AWS_REGION"
     einfo "Instance Type: $EC2_INSTANCE_TYPE (spot: $EC2_SPOT_INSTANCE)"
-    einfo "Amazon Linux AMI: $EC2_AMAZON_IMAGE_ID"
+    einfo "Amazon Linux AMI: ${EC2_AMAZON_IMAGE_ID:-auto}"
     einfo "Security Group: $EC2_SECURITY_GROUP"
     einfo "Key Pair: $EC2_KEY_PAIR"
 
@@ -146,9 +153,11 @@ show_phase1_prepare_instance() {
     # global EC2_SPOT_INSTANCE
 
     local image_id="$1"
-    local amazon_user="$2"
+    local image_arch="$2"
+    local amazon_user="$3"
 
-    local virt_type
+    local actual_image_arch
+    local actual_virt_type
     local snapshot_id
     local instance_id
     local public_ip
@@ -157,10 +166,26 @@ show_phase1_prepare_instance() {
 
     eindent
 
-    einfo "Verifying virtualization type..."
-    virt_type=$(get_image_virtualization_type "$image_id")
-    if [ "$virt_type" != "hvm" ]; then
-        edie "Provided AMI image has invalid virtualization type: $virt_type"
+    if [ -z "$image_id" ]; then
+        einfo "Detecting last Amazon Linux 2 AMI..."
+        image_id=$(get_last_amzn2_image "$image_arch")
+        if [ "$image_id" = "None" ] || [ -z "$image_id" ]; then
+            edie "Unable to find Amazon Linux 2 AMI"
+        else
+            einfo "Autodetected image ID is $image_id"
+        fi
+    else
+        einfo "Verifying image architecture..."
+        actual_image_arch=$(get_image_architecture "$image_id")
+        if [ "$actual_image_arch" != "$image_arch" ]; then
+            edie "Provided AMI image has invalid architecture: $actual_image_arch (exptected $image_arch)"
+        fi
+
+        einfo "Verifying image virtualization type..."
+        actual_virt_type=$(get_image_virtualization_type "$image_id")
+        if [ "$actual_virt_type" != "hvm" ]; then
+            edie "Provided AMI image has invalid virtualization type: $actual_virt_type (expected hvm)"
+        fi
     fi
 
     einfo "Detecting snapshot ID..."

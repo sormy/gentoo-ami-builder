@@ -21,6 +21,8 @@
 - Supports OpenRC and Systemd init systems.
 - Supports profile switching, including upgrade to 17.1 from 17.0 amd64 profiles.
 - Highly customizable (well, it is Gentoo), open source and free :-)
+- Multi-region support.
+- Automatic fresh Amazon Linux 2 image detection.
 
 ## How it works
 
@@ -53,24 +55,26 @@ less than 2GB of RAM will most-likely fail on kernel compilation phase.
 
 ## Prerequisites
 
-- AWS account.
-- AWS user with enabled programmatic access.
 - Locally installed and configured
   [aws cli](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html).
-- openssh, bash, curl, coreutils (Linux or macOS)
-- These permissions to build on on-demand instances:
-  - ec2:RunInstances
-  - ec2:TerminateInstances
-  - ec2:DescribeInstances
-  - ec2:CreateImage
-  - ec2:DeregisterImage
-  - ec2:DescribeImages
-  - ec2:DeleteSnapshot
-  - sts:GetCallerIdentity
-- These additional permissions to build on spot instances:
-  - ec2:DescribeSpotInstanceRequests
-  - ec2:RequestSpotInstances
-  - iam:CreateServiceLinkedRole
+- Linux or macOS with openssh, bash, curl, coreutils
+- AWS account
+- SSH key generated in AWS console or imported into AWS account (Key Pair)
+- AWS security group that allows incoming connections on 22 port
+- AWS user with enabled programmatic access
+  - Permissions to build on on-demand instances:
+    - ec2:RunInstances
+    - ec2:TerminateInstances
+    - ec2:DescribeInstances
+    - ec2:CreateImage
+    - ec2:DeregisterImage
+    - ec2:DescribeImages
+    - ec2:DeleteSnapshot
+    - sts:GetCallerIdentity
+  - Additional permissions to build on spot instances:
+    - ec2:DescribeSpotInstanceRequests
+    - ec2:RequestSpotInstances
+    - iam:CreateServiceLinkedRole
 
 Usually the easiest solution is to just temporarily add AWS managed policy
 "AdministratorAccess" to your user.
@@ -110,7 +114,7 @@ default Gentoo AMI amd64 / OpenRC image:
 ```shell
 git checkout https://github.com/sormy/gentoo-ami-builder
 cd gentoo-ami-builder
-./gentoo-ami-builder.sh --gentoo-stage3 amd64 --key-pair "Your Key Pair Name"
+./gentoo-ami-builder.sh --key-pair "Your Key Pair Name"
 ```
 
 You will find an AMI in AWS console once the builder will finish the process.
@@ -120,6 +124,8 @@ NOTE: Spot instances are used by default to save on bill.
 
 The most important options:
 
+- `--region` - custom AWS region (by default it is `us-east-1`)
+- `--security-group` - custom security group to attach to spawn instance
 - `--key-pair` - required to access EC2 builder instance over SSH
 - `--gentoo-stage3` - pick what stage3 to use, usually, `amd64` or `arm64`
 - `--gentoo-image-name` - what AMI name prefix to use
@@ -129,6 +135,25 @@ The most important options:
 Run `gentoo-ami-builder --help` to see full list of available options.
 
 **Doesn't work? Please file a bug and we will take care of it!**
+
+## Troubleshooting
+
+**Can't connect over SSH during prepare instance phase**
+
+Check if default security group "default" has enabled incoming access on 22 port
+form 0.0.0.0 or your IP address.
+
+**Timeout on "Waiting until AMI image will be available"**
+
+The time that takes to create image depends on multiple factors, including region,
+time of the day, day of the week, type of instance, size of volume etc.
+
+Failing on last step doesn't mean that image creation won' be finished at all,
+most likely it will finish, but a bit later. You can still monitor progress in
+AWS console.
+
+If you are experience continues failures when default 30 minutes is not enough,
+then submit an issue on the tracker.
 
 ## Customization
 

@@ -7,6 +7,7 @@
 # global EC2_KEY_PAIR
 # global EC2_SECURITY_GROUP
 # global SKIP_PHASES
+# global AWS_REGION
 
 is_phase_skipped() {
     # global SKIP_PHASES
@@ -120,10 +121,22 @@ wait_until_image_will_be_available() {
     done
 }
 
+get_last_amzn2_image() {
+    local arch="$1"
+
+    eexec -p aws ec2 describe-images \
+        --region "$AWS_REGION" \
+        --filters "Name=owner-alias,Values=amazon" \
+                  "Name=name,Values=amzn2-ami-hvm-2.0.*-$arch-gp2" \
+        --query "reverse(sort_by(Images, &CreationDate))[0].ImageId" \
+        --output text
+}
+
 get_image_root_volume_snapshot_id() {
     local image_id="$1"
 
     eexec -p aws ec2 describe-images \
+        --region "$AWS_REGION" \
         --image-ids "$image_id" \
         --query "Images[0].BlockDeviceMappings[0].Ebs.SnapshotId" \
         --output text
@@ -133,8 +146,19 @@ get_image_virtualization_type() {
     local image_id="$1"
 
     eexec -p aws ec2 describe-images \
+        --region "$AWS_REGION" \
         --image-ids "$image_id" \
         --query "Images[0].VirtualizationType" \
+        --output text
+}
+
+get_image_architecture() {
+    local image_id="$1"
+
+    eexec -p aws ec2 describe-images \
+        --region "$AWS_REGION" \
+        --image-ids "$image_id" \
+        --query "Images[0].Architecture" \
         --output text
 }
 
@@ -142,6 +166,7 @@ get_instance_state() {
     local instance_id="$1"
 
     eexec -p aws ec2 describe-instances \
+        --region "$AWS_REGION" \
         --instance-ids "$instance_id" \
         --query 'Reservations[0].Instances[0].State.Name' \
         --output text
@@ -151,6 +176,7 @@ get_instance_public_ip() {
     local instance_id="$1"
 
     eexec -p aws ec2 describe-instances \
+        --region "$AWS_REGION" \
         --instance-ids "$instance_id" \
         --query 'Reservations[0].Instances[0].NetworkInterfaces[0].Association.PublicIp' \
         --output text
@@ -160,6 +186,7 @@ get_spot_request_status() {
     local request_id="$1"
 
     eexec -p aws ec2 describe-spot-instance-requests \
+        --region "$AWS_REGION" \
         --spot-instance-request-ids "$request_id" \
         --query 'SpotInstanceRequests[0].Status.Code' \
         --output text
@@ -169,6 +196,7 @@ get_spot_request_instance_id() {
     local request_id="$1"
 
     eexec -p aws ec2 describe-spot-instance-requests \
+        --region "$AWS_REGION" \
         --spot-instance-request-ids "$request_id" \
         --query 'SpotInstanceRequests[0].InstanceId' \
         --output text
@@ -221,6 +249,7 @@ END
     fi
 
     eexec -p aws ec2 run-instances \
+        --region "$AWS_REGION" \
         --image-id "$image_id" \
         --instance-type "$EC2_INSTANCE_TYPE" \
         --key-name "$EC2_KEY_PAIR" \
@@ -283,6 +312,7 @@ run_spot_instance() {
 END
 
     eexec -p aws ec2 request-spot-instances \
+        --region "$AWS_REGION" \
         --launch-specification "file://$spot_specification_file" \
         --query 'SpotInstanceRequests[0].SpotInstanceRequestId' \
         --output text
@@ -298,6 +328,7 @@ terminate_instance() {
     local instance_id="$1"
 
     eexec aws ec2 terminate-instances \
+        --region "$AWS_REGION" \
         --instance-ids "$instance_id"
 }
 
@@ -305,6 +336,7 @@ remove_snapshot() {
     local snapshot_id="$1"
 
     eexec aws ec2 delete-snapshot \
+        --region "$AWS_REGION" \
         --snapshot-id "$snapshot_id"
 }
 
@@ -313,6 +345,7 @@ create_image() {
     local name="$2"
 
     eexec -p aws ec2 create-image \
+        --region "$AWS_REGION" \
         --instance-id "$instance_id" \
         --name "$name" \
         --description "$name" \
@@ -325,6 +358,7 @@ remove_image() {
     local image_id="$1"
 
     eexec aws ec2 deregister-image \
+        --region "$AWS_REGION" \
         --image-id "$image_id"
 }
 
@@ -332,6 +366,7 @@ get_image_state() {
     local image_id="$1"
 
     eexec -p aws ec2 describe-images \
+        --region "$AWS_REGION" \
         --image-ids "$image_id" \
         --query "Images[0].State" \
         --output text
@@ -341,6 +376,7 @@ get_image_snapshots() {
     local image_id="$1"
 
     eexec -p aws ec2 describe-images \
+        --region "$AWS_REGION" \
         --image-ids "$image_id" \
         --query 'Images[*].BlockDeviceMappings[*].Ebs.SnapshotId' \
         --output text
@@ -348,6 +384,7 @@ get_image_snapshots() {
 
 get_account_id() {
     eexec -p aws sts get-caller-identity \
+        --region "$AWS_REGION" \
         --query "Account" \
         --output text
 }
@@ -358,6 +395,7 @@ get_outdated_images() {
     local new_image_id="$3"
 
     eexec -p aws ec2 describe-images \
+        --region "$AWS_REGION" \
         --owners "$account_id" \
         --filters "Name=name,Values=$name_prefix *" \
         --query "Images[?ImageId!=\`$new_image_id\`].ImageId" \
