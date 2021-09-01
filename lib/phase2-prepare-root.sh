@@ -13,7 +13,7 @@
 
 ################################################################################
 
-PRI_DISK_DEV=$(blkid | grep 'LABEL="/"' | sed 's/p.*$//')
+PRI_DISK_DEV=$(find_disk1)
 PRI_ROOT_DEV=$(blkid | grep 'LABEL="/"' | sed 's/:.*$//')
 PRI_ESP_DEV=$(blkid | grep 'PARTLABEL="EFI' | sed 's/:.*$//')
 AUX_DISK_DEV=$(find_disk2)
