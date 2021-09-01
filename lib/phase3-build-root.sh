@@ -149,6 +149,7 @@ KERNEL_CONFIG="$KERNEL_CONFIG.bootstrap"
 einfo "Installing kernel sources..."
 
 eexec emerge $EMERGE_OPTS "sys-kernel/gentoo-sources"
+eexec ln -sfnv "$(find /usr/src -maxdepth 1 -type d -iname 'linux-*' | head -n 1)" /usr/src/linux
 
 einfo "Installing genkernel..."
 
