@@ -71,6 +71,13 @@ $(echo "$GENTOO_STAGE3_LIST" | sed 's/^/          * /')
         If set then switch to this profile during installation:
 $(echo "$GENTOO_PROFILE_LIST" | sed 's/^/          * /')
 
+    --update-world <value>          (default is "$GENTOO_UPDATE_WORLD")
+        Choose one of options:
+            no      - use what is available in stage3 as it is
+            rebuild - full rebuild for every package, even if there is no update
+            deep    - update deeply all packages, if there is update available
+            fast    - update @world packages, if there is update available
+
     --gentoo-mirror <value>         (default is "$GENTOO_MIRROR")
         Set to use specific gentoo mirror instead of default one.
 

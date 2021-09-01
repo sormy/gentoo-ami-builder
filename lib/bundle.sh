@@ -16,8 +16,11 @@
 # global EMERGE_OPTS
 # global GENKERNEL_OPTS
 # global GENTOO_MIRROR
+# global GENTOO_GPG_KEYS
 # global GENTOO_ARCH
 # global GENTOO_STAGE3
+# global GETNOO_PROFILE
+# global GENTOO_UPDATE_WORLD
 
 bundle_var_list() {
     local var_list="$*"
@@ -64,6 +67,7 @@ $(
         GENTOO_ARCH \
         GENTOO_STAGE3 \
         GENTOO_PROFILE \
+        GENTOO_UPDATE_WORLD \
 )
 $(
     bundle_func_list \

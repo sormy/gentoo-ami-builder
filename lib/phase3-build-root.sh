@@ -96,13 +96,20 @@ fi
 
 ################################################################################
 
-einfo "Rebuilding the world..."
+if [ "$GENTOO_UPDATE_WORLD" != "no" ]; then
+    einfo "Rebuilding the world..."
 
-# rebuild whole world with new compiler options, could be probably useful for x32
-# eexec emerge $EMERGE_OPTS -e @world
+    # rebuild whole world with new compiler options, could be probably useful for x32
+    if [ "$GENTOO_UPDATE_WORLD" = "rebuild" ]; then
+        eexec emerge $EMERGE_OPTS -e @world
+    elif [ "$GENTOO_UPDATE_WORLD" = "deep" ]; then
+        eexec emerge $EMERGE_OPTS --update --newuse --deep --with-bdeps=y @world
+    elif [ "$GENTOO_UPDATE_WORLD" = "fast" ]; then
+        eexec emerge $EMERGE_OPTS --update --newuse @world
+    fi
 
-eexec emerge $EMERGE_OPTS --update --deep --newuse --with-bdeps=y @world
-eexec emerge $EMERGE_OPTS --depclean
+    eexec emerge $EMERGE_OPTS --depclean
+fi
 
 ################################################################################
 

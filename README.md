@@ -131,6 +131,9 @@ The most important options:
 - `--gentoo-image-name` - what AMI name prefix to use
 - `--user-phase` - local script to sideload and execute to bootstrap additional
   tools into Gentoo AMI image
+- `--update-world` - setting to `no` can signtificantly reduce build time at the
+  cost of using stage3 prebuilt packages as it is without attempt to rebuild or
+  update them
 
 Run `gentoo-ami-builder --help` to see full list of available options.
 

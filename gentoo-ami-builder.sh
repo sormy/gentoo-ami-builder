@@ -85,6 +85,9 @@ GENTOO_STAGE3="amd64"
 # Gentoo profile. Blank indicates that stage3 default profile should be used.
 GENTOO_PROFILE=""
 
+# Pick the emerge @world update mode: no | rebuild | deep | fast
+GENTOO_UPDATE_WORLD="fast"
+
 # Available Gentoo architectures in EC2 are amd64 and x86.
 GENTOO_ARCH=""
 
@@ -137,6 +140,7 @@ opt_config "
     --key-pair \
     --gentoo-stage3 \
     --gentoo-profile \
+    --update-world \
     --gentoo-mirror \
     --gentoo-image-name \
     --user-phase \
@@ -172,6 +176,7 @@ OPT="$(opt_get --security-group)";      [ -z "$OPT" ] || EC2_SECURITY_GROUP="$OP
 OPT="$(opt_get --key-pair)";            [ -z "$OPT" ] || EC2_KEY_PAIR="$OPT"
 OPT="$(opt_get --gentoo-stage3)";       [ -z "$OPT" ] || GENTOO_STAGE3="$OPT"
 OPT="$(opt_get --gentoo-profile)";      [ -z "$OPT" ] || GENTOO_PROFILE="$OPT"
+OPT="$(opt_get --update-world)";        [ -z "$OPT" ] || GENTOO_UPDATE_WORLD="$OPT"
 OPT="$(opt_get --gentoo-mirror)";       [ -z "$OPT" ] || GENTOO_MIRROR="$OPT"
 OPT="$(opt_get --gentoo-image-name)";   [ -z "$OPT" ] || GENTOO_IMAGE_NAME_PREFIX="$OPT"
 OPT="$(opt_get --user-phase)";          [ -z "$OPT" ] || USER_PHASE="$OPT"
