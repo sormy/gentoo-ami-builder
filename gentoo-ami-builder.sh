@@ -92,7 +92,7 @@ GENTOO_ARCH=""
 GENTOO_MIRROR="http://distfiles.gentoo.org"
 
 # Current Gentoo GPG public key IDs: https://www.gentoo.org/downloads/signatures/
-GENTOO_GPG_KEYS="$(cat "$SCRIPT_DIR/gentoo-gpg-keys.txt" | grep -v '^#')"
+GENTOO_GPG_KEYS="$(cat "$SCRIPT_DIR/gentoo-gpg-keys.conf" | grep -v '^#')"
 
 # Target AMI image prefix.
 GENTOO_IMAGE_NAME_PREFIX="Gentoo Linux"
