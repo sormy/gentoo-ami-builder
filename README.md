@@ -193,8 +193,8 @@ with EC2 hardware (as of 2020-10-14):
 | amd64-systemd                     | default | amd64 | :ok:       | v1.1.0 on 2020-10-14  |
 | amd64-uclibc-hardened             | default | amd64 | :x:        | v1.1.0 on 2020-10-14  |
 | amd64-uclibc-vanilla              | default | amd64 | :x:        | v1.1.0 on 2020-10-14  |
-| amd64                             | default | amd64 | :ok:       | v1.1.0 on 2020-10-14  |
-| x32                               | default | amd64 | :ok:       | v1.1.3 on 2021-09-01  |
+| amd64                             | default | amd64 | :ok:       | v1.1.3 on 2021-09-01  |
+| x32                               | default | amd64 | :ok:       | v1.1.1 on 2020-10-20  |
 | i486                              | default | x86   | :x:        |                       |
 | i686-hardened                     | default | x86   | :x:        |                       |
 | i686-musl-vanilla                 | default | x86   | :x:        |                       |
