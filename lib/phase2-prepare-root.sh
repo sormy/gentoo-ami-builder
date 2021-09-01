@@ -25,6 +25,7 @@ einfo "Synchronizing time..."
 
 # having wrong time will cause all kinds of troubles
 eexec yum -y -q install ntp
+eqexec pkill ntpd
 eexec ntpd -gq
 
 ################################################################################
