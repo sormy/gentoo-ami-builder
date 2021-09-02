@@ -160,7 +160,7 @@ eexec ln -sfnv "$(find /usr/src -maxdepth 1 -type d -iname 'linux-*' | head -n 1
 
 einfo "Installing genkernel..."
 
-# TODO: custom use flags probably have sense only for PC platform
+# TODO: custom use flags probably make sense only for PC platform
 echo "sys-kernel/genkernel -firmware" > /etc/portage/package.use/genkernel
 echo "sys-apps/util-linux static-libs" >> /etc/portage/package.use/genkernel
 eexec emerge $EMERGE_OPTS "sys-kernel/genkernel"
