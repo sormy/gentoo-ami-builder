@@ -325,14 +325,6 @@ fi
 
 ################################################################################
 
-if eoff "$GENTOO_SYSTEMD"; then
-    einfo "Disabling keymaps service..."
-
-    eexec rc-update delete keymaps boot
-fi
-
-################################################################################
-
 einfo "Installing ec2-init..."
 
 if eoff "$GENTOO_SYSTEMD"; then
