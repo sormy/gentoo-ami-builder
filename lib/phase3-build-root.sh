@@ -306,6 +306,13 @@ fi
 
 ################################################################################
 
+if eoff "$GENTOO_SYSTEMD"; then
+    einfo "Installing DHCP support..."
+    eexec emerge $EMERGE_OPTS net-misc/dhcpcd
+fi
+
+################################################################################
+
 einfo "Configuring SSH..."
 
 eexec passwd -d -l root
