@@ -19,8 +19,9 @@
 # global GENTOO_GPG_KEYS
 # global GENTOO_ARCH
 # global GENTOO_STAGE3
-# global GETNOO_PROFILE
+# global GENTOO_PROFILE
 # global GENTOO_UPDATE_WORLD
+# global ROOT_PASSWORD
 
 bundle_var_list() {
     local var_list="$*"
@@ -68,6 +69,7 @@ $(
         GENTOO_STAGE3 \
         GENTOO_PROFILE \
         GENTOO_UPDATE_WORLD \
+        ROOT_PASSWORD \
 )
 $(
     bundle_func_list \

@@ -190,10 +190,10 @@ with EC2 hardware (as of 2020-10-14):
 | amd64-musl-hardened               | default | amd64 | :x:        | v1.1.0 on 2020-10-14  |
 | amd64-musl-vanilla                | default | amd64 | :x:        | v1.1.0 on 2020-10-14  |
 | amd64-nomultilib                  | default | amd64 | :ok:       | v1.1.0 on 2020-10-14  |
-| amd64-systemd                     | default | amd64 | :ok:       | v1.1.0 on 2020-10-14  |
+| amd64-systemd                     | default | amd64 | :ok:       | v1.1.5 on 2021-10-04  |
 | amd64-uclibc-hardened             | default | amd64 | :x:        | v1.1.0 on 2020-10-14  |
 | amd64-uclibc-vanilla              | default | amd64 | :x:        | v1.1.0 on 2020-10-14  |
-| amd64                             | default | amd64 | :ok:       | v1.1.3 on 2021-09-01  |
+| amd64                             | default | amd64 | :ok:       | v1.1.5 on 2021-10-04  |
 | x32                               | default | amd64 | :ok:       | v1.1.1 on 2020-10-20  |
 | i486                              | default | x86   | :x:        |                       |
 | i686-hardened                     | default | x86   | :x:        |                       |
@@ -203,7 +203,7 @@ with EC2 hardware (as of 2020-10-14):
 | i686-uclibc-vanilla               | default | x86   | :x:        |                       |
 | i686                              | default | x86   | :x:        |                       |
 | arm64-systemd                     | default | arm64 | :ok:       | v1.1.0 on 2020-10-14  |
-| arm64                             | default | arm64 | :ok:       | v1.1.3 on 2021-09-01  |
+| arm64                             | default | arm64 | :ok:       | v1.1.5 on 2021-10-04  |
 
 Status:
 

@@ -12,6 +12,8 @@
 # global GENTOO_STAGE3
 # global GENTOO_PROFILE
 # global CURL_OPTS
+# global GENTOO_UPDATE_WORLD
+# global ROOT_PASSWORD
 
 ################################################################################
 
@@ -313,9 +315,17 @@ fi
 
 ################################################################################
 
-einfo "Configuring SSH..."
+einfo "Configuring root password..."
 
-eexec passwd -d -l root
+if [ "$ROOT_PASSWORD" = "" ]; then
+    eexec passwd -d -l root
+else
+    eexec sh -c 'echo "root:'"$ROOT_PASSWORD"'" | chpasswd'
+fi
+
+################################################################################
+
+einfo "Configuring SSH..."
 
 if eoff "$GENTOO_SYSTEMD"; then
     eexec rc-update add sshd default

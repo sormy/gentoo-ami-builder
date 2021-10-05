@@ -21,7 +21,7 @@ source "$SCRIPT_DIR/lib/distfiles.sh"
 
 APP_NAME="gentoo-ami-builder"
 APP_DESCRIPTION="Gentoo AMI Builder"
-APP_VERSION="1.1.4"
+APP_VERSION="1.1.5"
 
 # AWS region.
 AWS_REGION="${AWS_DEFAULT_REGION:-us-east-1}"
@@ -88,6 +88,9 @@ GENTOO_PROFILE=""
 # Pick the emerge @world update mode: no | rebuild | deep | fast
 GENTOO_UPDATE_WORLD="fast"
 
+# Set root password for debugging purposes (login using EC2 serial console)
+ROOT_PASSWORD=""
+
 # Available Gentoo architectures in EC2 are amd64 and x86.
 GENTOO_ARCH=""
 
@@ -141,6 +144,7 @@ opt_config "
     --gentoo-stage3 \
     --gentoo-profile \
     --update-world \
+    --root-password \
     --gentoo-mirror \
     --gentoo-image-name \
     --user-phase \
@@ -177,6 +181,7 @@ OPT="$(opt_get --key-pair)";            [ -z "$OPT" ] || EC2_KEY_PAIR="$OPT"
 OPT="$(opt_get --gentoo-stage3)";       [ -z "$OPT" ] || GENTOO_STAGE3="$OPT"
 OPT="$(opt_get --gentoo-profile)";      [ -z "$OPT" ] || GENTOO_PROFILE="$OPT"
 OPT="$(opt_get --update-world)";        [ -z "$OPT" ] || GENTOO_UPDATE_WORLD="$OPT"
+OPT="$(opt_get --root-password)";       [ -z "$OPT" ] || ROOT_PASSWORD="$OPT"
 OPT="$(opt_get --gentoo-mirror)";       [ -z "$OPT" ] || GENTOO_MIRROR="$OPT"
 OPT="$(opt_get --gentoo-image-name)";   [ -z "$OPT" ] || GENTOO_IMAGE_NAME_PREFIX="$OPT"
 OPT="$(opt_get --user-phase)";          [ -z "$OPT" ] || USER_PHASE="$OPT"

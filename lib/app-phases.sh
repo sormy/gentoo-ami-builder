@@ -78,6 +78,11 @@ $(echo "$GENTOO_PROFILE_LIST" | sed 's/^/          * /')
             deep    - update deeply all packages, if there is update available
             fast    - update @world packages, if there is update available
 
+    --root-password <value>         (default is "$ROOT_PASSWORD")
+        (DEBUG) Set password for root user. Useful to log in using EC2 serial
+        console as root in the case when network or ssh can't start.
+        If blank then root password can't be used to login using serial console.
+
     --gentoo-mirror <value>         (default is "$GENTOO_MIRROR")
         Set to use specific gentoo mirror instead of default one.
 
