@@ -212,7 +212,7 @@ END
 
 eexec mkdir -p "/usr/local/portage/net-misc/ena"
 
-ENA_VERSION="2.5.0"
+ENA_VERSION="2.6.0"
 
 eexec curl $CURL_OPTS \
     -o "/usr/local/portage/net-misc/ena/ena-$ENA_VERSION.ebuild" \
