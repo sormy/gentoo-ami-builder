@@ -137,7 +137,8 @@ fi
 
 einfo "Copying network options..."
 
-eexec cp -f /etc/resolv.conf /mnt/gentoo/etc/
+eexec rm -rf /mnt/gentoo/etc/resolv.conf
+eexec cp /etc/resolv.conf /mnt/gentoo/etc/
 
 ################################################################################
 
