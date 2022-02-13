@@ -145,7 +145,7 @@ if eon "$GENTOO_SYSTEMD"; then
         "$KERNEL_CONFIG.bootstrap"
 fi
 
-if [ "$GENTOO_STAGE3" = "x32" ]; then
+if [ "$GENTOO_STAGE3" = "x32-openrc" ]; then
     eexec sed -i \
         -e '/CONFIG_X86_X32[ =]/c\CONFIG_X86_X32=y' \
         "$KERNEL_CONFIG.bootstrap"
@@ -156,6 +156,11 @@ KERNEL_CONFIG="$KERNEL_CONFIG.bootstrap"
 ################################################################################
 
 einfo "Installing kernel sources..."
+
+# ena <= 2.6.1 is incompatible with fresh kernels, temporarily mask >=5.15 kernels
+mkdir -p /etc/portage/package.mask
+echo "# masked due to ena <= 2.6.1 being incompatible with kernels >= 5.15" > /etc/portage/package.mask/kernel
+echo ">=sys-kernel/gentoo-sources-5.15.0" >> /etc/portage/package.mask/kernel
 
 eexec emerge $EMERGE_OPTS "sys-kernel/gentoo-sources"
 eexec ln -sfnv "$(find /usr/src -maxdepth 1 -type d -iname 'linux-*' | head -n 1)" /usr/src/linux
@@ -212,7 +217,7 @@ END
 
 eexec mkdir -p "/usr/local/portage/net-misc/ena"
 
-ENA_VERSION="2.6.0"
+ENA_VERSION="2.6.1"
 
 eexec curl $CURL_OPTS \
     -o "/usr/local/portage/net-misc/ena/ena-$ENA_VERSION.ebuild" \

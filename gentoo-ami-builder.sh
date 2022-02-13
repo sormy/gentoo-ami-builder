@@ -21,7 +21,7 @@ source "$SCRIPT_DIR/lib/distfiles.sh"
 
 APP_NAME="gentoo-ami-builder"
 APP_DESCRIPTION="Gentoo AMI Builder"
-APP_VERSION="1.1.5"
+APP_VERSION="1.1.6"
 
 # AWS region.
 AWS_REGION="${AWS_DEFAULT_REGION:-us-east-1}"
@@ -80,7 +80,7 @@ EMERGE_OPTS="--quiet"
 GENKERNEL_OPTS="--no-color"
 
 # Gentoo stage3.
-GENTOO_STAGE3="amd64"
+GENTOO_STAGE3="amd64-openrc"
 
 # Gentoo profile. Blank indicates that stage3 default profile should be used.
 GENTOO_PROFILE=""
@@ -255,7 +255,7 @@ if ! is_phase_skipped 1; then
     show_phase1_prepare_instance "$EC2_AMAZON_IMAGE_ID" "$EC2_ARCH" "$AMAZON_USER"
 
     # rebuild kernel for x32 if needed
-    if [ "$GENTOO_STAGE3" = "x32" ]; then
+    if [ "$GENTOO_STAGE3" = "x32-openrc" ]; then
         show_phase1_prepare_x32 "$EC2_INSTANCE_ID" "$AMAZON_USER" \
             "$EC2_PUBLIC_IP" "$APP_PHASE1_X32_SCRIPT"
     fi

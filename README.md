@@ -83,26 +83,26 @@ Alternatively, this policy can be used to grant AWS user all needed permissions:
 
 ```json
 {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "ec2:RunInstances",
-                "ec2:TerminateInstances",
-                "ec2:DescribeInstances",
-                "ec2:CreateImage",
-                "ec2:DeregisterImage",
-                "ec2:DescribeImages",
-                "ec2:DescribeSpotInstanceRequests",
-                "ec2:DeleteSnapshot",
-                "ec2:RequestSpotInstances",
-                "iam:CreateServiceLinkedRole",
-                "sts:GetCallerIdentity"
-            ],
-            "Resource": "*"
-        }
-    ]
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:RunInstances",
+        "ec2:TerminateInstances",
+        "ec2:DescribeInstances",
+        "ec2:CreateImage",
+        "ec2:DeregisterImage",
+        "ec2:DescribeImages",
+        "ec2:DescribeSpotInstanceRequests",
+        "ec2:DeleteSnapshot",
+        "ec2:RequestSpotInstances",
+        "iam:CreateServiceLinkedRole",
+        "sts:GetCallerIdentity"
+      ],
+      "Resource": "*"
+    }
+  ]
 }
 ```
 
@@ -179,31 +179,35 @@ Read more about EC2 metadata: https://docs.aws.amazon.com/AWSEC2/latest/UserGuid
 ## Stage3
 
 Here are all available Gentoo stage3 tarballs that are theoretically compatible
-with EC2 hardware (as of 2020-10-14):
+with EC2 hardware (as of 2022-02-13):
 
-| Stage3                            | Profile | Arch  | Status     | Last Verified         |
-|-----------------------------------|---------|-------|------------|-----------------------|
-| amd64-hardened+nomultilib         | default | amd64 | :ok:       | v1.1.0 on 2020-10-14  |
-| amd64-hardened-selinux+nomultilib | default | amd64 | :ok:       | v1.1.0 on 2020-10-14  |
-| amd64-hardened-selinux            | default | amd64 | :ok:       | v1.1.0 on 2020-10-14  |
-| amd64-hardened                    | default | amd64 | :ok:       | v1.1.0 on 2020-10-14  |
-| amd64-musl-hardened               | default | amd64 | :x:        | v1.1.0 on 2020-10-14  |
-| amd64-musl-vanilla                | default | amd64 | :x:        | v1.1.0 on 2020-10-14  |
-| amd64-nomultilib                  | default | amd64 | :ok:       | v1.1.0 on 2020-10-14  |
-| amd64-systemd                     | default | amd64 | :ok:       | v1.1.5 on 2021-10-04  |
-| amd64-uclibc-hardened             | default | amd64 | :x:        | v1.1.0 on 2020-10-14  |
-| amd64-uclibc-vanilla              | default | amd64 | :x:        | v1.1.0 on 2020-10-14  |
-| amd64                             | default | amd64 | :ok:       | v1.1.5 on 2021-10-04  |
-| x32                               | default | amd64 | :ok:       | v1.1.1 on 2020-10-20  |
-| i486                              | default | x86   | :x:        |                       |
-| i686-hardened                     | default | x86   | :x:        |                       |
-| i686-musl-vanilla                 | default | x86   | :x:        |                       |
-| i686-systemd                      | default | x86   | :x:        |                       |
-| i686-uclibc-hardened              | default | x86   | :x:        |                       |
-| i686-uclibc-vanilla               | default | x86   | :x:        |                       |
-| i686                              | default | x86   | :x:        |                       |
-| arm64-systemd                     | default | arm64 | :ok:       | v1.1.0 on 2020-10-14  |
-| arm64                             | default | arm64 | :ok:       | v1.1.5 on 2021-10-04  |
+| Stage3                                   | Profile | Arch  | Status     | Last Verified        |
+| ---------------------------------------- | ------- | ----- | ---------- | -------------------- |
+| amd64-desktop-openrc                     | default | amd64 | :question: |                      |
+| amd64-desktop-systemd                    | default | amd64 | :question: |                      |
+| amd64-hardened-nomultilib-openrc         | default | amd64 | :ok:       | v1.1.0 on 2020-10-14 |
+| amd64-hardened-nomultilib-selinux-openrc | default | amd64 | :ok:       | v1.1.0 on 2020-10-14 |
+| amd64-hardened-openrc                    | default | amd64 | :ok:       | v1.1.0 on 2020-10-14 |
+| amd64-hardened-selinux-openrc            | default | amd64 | :ok:       | v1.1.0 on 2020-10-14 |
+| amd64-musl                               | default | amd64 | :x:        | v1.1.0 on 2020-10-14 |
+| amd64-musl-hardened                      | default | amd64 | :x:        | v1.1.0 on 2020-10-14 |
+| amd64-nomultilib-openrc                  | default | amd64 | :ok:       | v1.1.0 on 2020-10-14 |
+| amd64-nomultilib-systemd                 | default | amd64 | :question: |                      |
+| amd64-openrc                             | default | amd64 | :ok:       | v1.1.6 on 2022-02-13 |
+| amd64-systemd                            | default | amd64 | :ok:       | v1.1.5 on 2021-10-04 |
+| arm64                                    | default | arm64 | :question: |                      |
+| arm64-desktop-openrc                     | default | arm64 | :question: |                      |
+| arm64-desktop-systemd                    | default | arm64 | :question: |                      |
+| arm64-musl                               | default | arm64 | :question: |                      |
+| arm64-musl-hardened                      | default | arm64 | :question: |                      |
+| arm64-openrc                             | default | arm64 | :ok:       | v1.1.5 on 2021-10-04 |
+| arm64-systemd                            | default | arm64 | :ok:       | v1.1.0 on 2020-10-14 |
+| i486-openrc                              | default | x86   | :x:        |                      |
+| i686-hardened-openrc                     | default | x86   | :x:        |                      |
+| i686-musl                                | default | x86   | :x:        |                      |
+| i686-openrc                              | default | x86   | :x:        |                      |
+| i686-systemd                             | default | x86   | :x:        |                      |
+| x32-openrc                               | default | amd64 | :ok:       | v1.1.1 on 2020-10-20 |
 
 Status:
 

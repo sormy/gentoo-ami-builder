@@ -11,7 +11,7 @@
 ################################################################################
 
 # exit if not x32 stage3 or if x32 support has already built into currently loaded kernel
-if [ "$GENTOO_STAGE3" != "x32" ] || grep -q "^CONFIG_X86_X32=y$" < "/boot/config-$(uname -r)"; then
+if [ "$GENTOO_STAGE3" != "x32-openrc" ] || grep -q "^CONFIG_X86_X32=y$" < "/boot/config-$(uname -r)"; then
     exit
 fi
 
