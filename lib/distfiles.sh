@@ -17,10 +17,10 @@ download_distfile_safe() {
 
     eexec curl $CURL_OPTS \
         -o "$file" "$url" \
-        -o "$file.DIGESTS.asc" "$url.DIGESTS.asc"
+        -o "$file.DIGESTS" "$url.DIGESTS"
 
     for hash in sha512 whirlpool; do
-        expected_hash="$(grep -i "$hash" -A 1 < "$file.DIGESTS.asc" \
+        expected_hash="$(grep -i "$hash" -A 1 < "$file.DIGESTS" \
             | grep -v '^[#-]' | grep -v '\.CONTENTS\.' | cut -d" " -f1)"
 
         if [ -n "$expected_hash" ]; then
@@ -49,6 +49,6 @@ download_distfile_safe() {
     eexec gpg --keyserver hkps://keys.gentoo.org \
         --recv-keys $GENTOO_GPG_KEYS
 
-    eexec gpg --verify "$file.DIGESTS.asc" \
+    eexec gpg --verify "$file.DIGESTS" \
         || edie "GPG signature verification failed."
 }
