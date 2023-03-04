@@ -26,8 +26,9 @@ APP_VERSION="1.1.6"
 # AWS region.
 AWS_REGION="${AWS_DEFAULT_REGION:-us-east-1}"
 
-# Security group with incoming connection available on SSH port (22).
-EC2_SECURITY_GROUP="default"
+# Subnet/security group with incoming connection available on SSH port (22).
+EC2_SUBNET_ID=""
+EC2_SECURITY_GROUP=""
 
 # SSH key pair that will be used to connect to build instance.
 # The private key should be available locally to log into host.
@@ -36,8 +37,8 @@ EC2_KEY_PAIR=""
 # Instance type that will be used as compile host.
 # Recommended is compute-optimized instance type.
 EC2_INSTANCE_TYPE=""
-EC2_INSTANCE_TYPE_AMD64="c5.2xlarge"
-EC2_INSTANCE_TYPE_ARM64="a1.2xlarge"
+EC2_INSTANCE_TYPE_AMD64="c6a.2xlarge"
+EC2_INSTANCE_TYPE_ARM64="c7g.2xlarge"
 
 # Instance architecture: i386, x86_64, arm64.
 EC2_ARCH=""
@@ -46,7 +47,7 @@ EC2_ARCH=""
 EC2_VOLUME_SIZE="20"
 
 # Default volume type.
-EC2_VOLUME_TYPE="gp2"
+EC2_VOLUME_TYPE="gp3"
 
 # Set to the latest Amazon Linux AMI for selected architecture and region.
 EC2_AMAZON_IMAGE_ID=""
@@ -68,16 +69,17 @@ SSH_OPTS="-o ConnectTimeout=5
           -o StrictHostKeyChecking=no
           -o LogLevel=error
           -o ServerAliveInterval=60
-          -o ServerAliveCountMax=3"
+          -o ServerAliveCountMax=3
+          ${SSH_OPTS}"
 
 # Curl default options.
-CURL_OPTS="--silent --fail"
+CURL_OPTS="--silent --fail ${CURL_OPTS}"
 
 # Recommended default options for emerge.
-EMERGE_OPTS="--quiet"
+EMERGE_OPTS="--quiet ${EMERGE_OPTS}"
 
 # Recommended default options for genkernel.
-GENKERNEL_OPTS="--no-color"
+GENKERNEL_OPTS="--no-color ${GENKERNEL_OPTS}"
 
 # Gentoo stage3.
 GENTOO_STAGE3="amd64-openrc"
@@ -138,6 +140,7 @@ opt_config "
     --region \
     --instance-type \
     --amazon-image-id \
+    --subnet-id \
     --security-group \
     --spot-instance \
     --key-pair \
@@ -176,6 +179,7 @@ OPT="$(opt_get --region)";              [ -z "$OPT" ] || AWS_REGION="$OPT"
 OPT="$(opt_get --instance-type)";       [ -z "$OPT" ] || EC2_INSTANCE_TYPE="$OPT"
 OPT="$(opt_get --amazon-image-id)";     [ -z "$OPT" ] || EC2_AMAZON_IMAGE_ID="$OPT"
 OPT="$(opt_get --spot-instance)";       [ -z "$OPT" ] || EC2_SPOT_INSTANCE="$OPT"
+OPT="$(opt_get --subnet-id)";           [ -z "$OPT" ] || EC2_SUBNET_ID="$OPT"
 OPT="$(opt_get --security-group)";      [ -z "$OPT" ] || EC2_SECURITY_GROUP="$OPT"
 OPT="$(opt_get --key-pair)";            [ -z "$OPT" ] || EC2_KEY_PAIR="$OPT"
 OPT="$(opt_get --gentoo-stage3)";       [ -z "$OPT" ] || GENTOO_STAGE3="$OPT"

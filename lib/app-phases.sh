@@ -8,6 +8,7 @@
 # global EC2_PUBLIC_IP
 # global EC2_INSTANCE_TYPE
 # global EC2_AMAZON_IMAGE_ID
+# global EC2_SUBNET_ID
 # global EC2_SECURITY_GROUP
 # global GENTOO_STAGE3
 # global GENTOO_ARCH
@@ -49,13 +50,21 @@ Options:
         Use specific instance type to bootstrap Gentoo AMI image.
         Instance types: https://aws.amazon.com/ec2/instance-types/
         Pricing: https://aws.amazon.com/ec2/pricing/on-demand/
+        See README.md for hints about appropriate types.
 
     --amazon-image-id <value>       (default is "$EC2_AMAZON_IMAGE_ID")
         Use this Amazon Linux image ID to bootstrap Gentoo.
         Automatically detected if not defined.
 
+    --subnet-id <value>             (default is taken from your default VPC)
+        Use this VPC subnet to bootstrap through SSH (must support public IPv4
+        addresses).
+
     --security-group <value>        (default is "$EC2_SECURITY_GROUP")
-        Use this security group to bootstrap through SSH (22 port should be open).
+        Use this security group or security group id to bootstrap through SSH
+        (22 port should be open). Default is determined by AWS based upon
+        subnet (if any) or default VPC. Give the group name for "Classic"
+        network accounts, or the group id ("sg-XXX") for newer VPC accounts.
 
     --key-pair <value>
         Use this key pair for SSH access (keys should be available locally).
@@ -132,7 +141,12 @@ show_intro() {
     einfo "AWS Region: $AWS_REGION"
     einfo "Instance Type: $EC2_INSTANCE_TYPE (spot: $EC2_SPOT_INSTANCE)"
     einfo "Amazon Linux AMI: ${EC2_AMAZON_IMAGE_ID:-auto}"
-    einfo "Security Group: $EC2_SECURITY_GROUP"
+    if [ -n "$EC2_SUBNET_ID" ]; then
+        einfo "Subnet ID: $EC2_SUBNET_ID"
+    fi
+    if [ -n "$EC2_SECURITY_GROUP" ]; then
+        einfo "Security Group: $EC2_SECURITY_GROUP"
+    fi
     einfo "Key Pair: $EC2_KEY_PAIR"
 
     einfo "Gentoo Stage3: $GENTOO_STAGE3 (ARCH: $GENTOO_ARCH)"
@@ -206,7 +220,7 @@ show_phase1_prepare_instance() {
 
     if eon "$EC2_SPOT_INSTANCE"; then
         einfo "Requesting spot instance..."
-        spot_request_id=$(run_spot_instance "$image_id" "$snapshot_id")
+        spot_request_id=$(run_instance "$image_id" "$snapshot_id" "spot")
 
         sleep 5 # spot request status retrieval could not be immediately available
 
