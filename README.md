@@ -63,6 +63,7 @@ less than 2GB of RAM will most-likely fail on kernel compilation phase.
 - AWS security group that allows incoming connections on 22 port
 - AWS user with enabled programmatic access
   - Permissions to build on on-demand instances:
+    - ec2:CreateTags
     - ec2:RunInstances
     - ec2:TerminateInstances
     - ec2:DescribeInstances
@@ -74,6 +75,10 @@ less than 2GB of RAM will most-likely fail on kernel compilation phase.
   - Additional permissions to build on spot instances:
     - ec2:DescribeSpotInstanceRequests
     - ec2:RequestSpotInstances
+  - Additional permission needed the first time you launch a spot instance.
+    You don't need this if you already have the `AWSServiceRoleForEC2Spot`
+    Service-Linked Role in your account; it's automatically created by the
+    console app the first time you create a spot instance.
     - iam:CreateServiceLinkedRole
 
 Usually the easiest solution is to just temporarily add AWS managed policy
@@ -88,6 +93,7 @@ Alternatively, this policy can be used to grant AWS user all needed permissions:
     {
       "Effect": "Allow",
       "Action": [
+        "ec2:CreateTags",
         "ec2:RunInstances",
         "ec2:TerminateInstances",
         "ec2:DescribeInstances",
@@ -125,6 +131,7 @@ NOTE: Spot instances are used by default to save on bill.
 The most important options:
 
 - `--region` - custom AWS region (by default it is `us-east-1`)
+- `--subnet-id` - AWS VPC subnet for spawned instance
 - `--security-group` - custom security group to attach to spawn instance
 - `--key-pair` - required to access EC2 builder instance over SSH
 - `--gentoo-stage3` - pick what stage3 to use, usually, `amd64` or `arm64`
@@ -134,6 +141,15 @@ The most important options:
 - `--update-world` - setting to `no` can signtificantly reduce build time at the
   cost of using stage3 prebuilt packages as it is without attempt to rebuild or
   update them
+
+In addition, some environment variables affect the underlying subsystems:
+
+- `AWS_PROFILE`, used by the AWS CLI commands.
+
+- `SSH_OPTS` is passed to `ssh`. For example,
+  `-i myidentityfile.pem -o ServerAliveInterval=30`
+
+- `GENKERNEL_OPTS`, passed to `genkernel`
 
 Run `gentoo-ami-builder --help` to see full list of available options.
 
@@ -193,15 +209,15 @@ with EC2 hardware (as of 2022-02-13):
 | amd64-musl-hardened                      | default | amd64 | :x:        | v1.1.0 on 2020-10-14 |
 | amd64-nomultilib-openrc                  | default | amd64 | :ok:       | v1.1.0 on 2020-10-14 |
 | amd64-nomultilib-systemd                 | default | amd64 | :question: |                      |
-| amd64-openrc                             | default | amd64 | :ok:       | v1.1.6 on 2022-02-13 |
-| amd64-systemd                            | default | amd64 | :ok:       | v1.1.5 on 2021-10-04 |
+| amd64-openrc                             | default | amd64 | :ok:       | v1.1.6+on 2023-03-03 |
+| amd64-systemd                            | default | amd64 | :ok:       | v1.1.6+on 2023-03-03 |
 | arm64                                    | default | arm64 | :question: |                      |
 | arm64-desktop-openrc                     | default | arm64 | :question: |                      |
 | arm64-desktop-systemd                    | default | arm64 | :question: |                      |
 | arm64-musl                               | default | arm64 | :question: |                      |
 | arm64-musl-hardened                      | default | arm64 | :question: |                      |
-| arm64-openrc                             | default | arm64 | :ok:       | v1.1.5 on 2021-10-04 |
-| arm64-systemd                            | default | arm64 | :ok:       | v1.1.0 on 2020-10-14 |
+| arm64-openrc                             | default | arm64 | :ok:       | v1.1.6+on 2023-03-03 |
+| arm64-systemd                            | default | arm64 | :ok:       | v1.1.6+on 2023-03-03 |
 | i486-openrc                              | default | x86   | :x:        |                      |
 | i686-hardened-openrc                     | default | x86   | :x:        |                      |
 | i686-musl                                | default | x86   | :x:        |                      |
@@ -224,15 +240,20 @@ Problems:
 
 ## EC2 Instance Type
 
-The build is tested to be working well on these instance types:
+The build is tested to be working well on these instance types.
 
-- amd64 / c5.2xlarge (network ENA, block NVMe, MBR boot)
-- amd64 / c4.2xlarge (network IXGBEVF, MBR boot)
-- amd64 / t2.2xlarge (unlimited cpu credits)
-- arm64 / a1.2xlarge (network ENA, block NVME, EFI boot)
+- amd64 / c6a.2xlarge (network ENA, block NVMe, MBR boot)
+- amd64 / c6in.2xlarge (network ENA, block NVMe, MBR boot)
+- arm64 / t4g.xlarge (default cpu credits, ENA, NVME, EFI)
+- arm64 / c7g.2xlarge (network ENA, block NVME, EFI boot)
 
 Build process on slow instances could fail (due to lack of RAM) or could take
-a lot of time (due to low CPU performance).
+a lot of time (due to low CPU performance). For a default build (minimal
+compilation) all of the 8-CPU instances are about the same, whether amd64 or
+arm64, and take about an hour. The exception is c6in; it reduces elapsed time
+by 25% over the c6a or c6i, mostly due to reduced waiting for the AMI image to
+be available. The t4g.xlarge (4 cores) is about 15 minutes slower than the
+t4g.2xlarge.
 
 ## Init System
 
@@ -253,9 +274,9 @@ By the way, there are some additional fixes performed by this script:
   has different name for driver so without fix it won't be enabled by default.
 - Some instances, like C5, have network only with ENA driver. This driver need
   to be compiled during installation from sources provided by Amazon.
-- Some instances, like C5, have NVMe block devices. NVMe driver need to be
-  compiled into kernel to make sure that Gentoo will load it before mounting
-  the root.
+- Modern instances, C/M/R5 and above, and T3 and above, have NVMe block devices.
+  The NVMe driver needs to be compiled into kernel to make sure that Gentoo will
+  load it before mounting the root.
 
 NOTE: EFA driver is not available yet. PRs are welcome!
 
@@ -320,11 +341,11 @@ is more complex.
 
 ## Examples
 
-![Success p1](./examples/gentoo-amd64-c5-p1.png?raw=true)
+![Success p1](./examples/gentoo-amd64-c6-p1.png?raw=true)
 
-![Success p2](./examples/gentoo-amd64-c5-p2.png?raw=true)
+![Success p2](./examples/gentoo-amd64-c6-p2.png?raw=true)
 
-![Success p3](./examples/gentoo-amd64-c5-p3.png?raw=true)
+![Success p3](./examples/gentoo-amd64-c6-p3.png?raw=true)
 
 ![Failure](./examples/gentoo-x86-genkernel-error.png?raw=true)
 

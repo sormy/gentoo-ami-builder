@@ -206,18 +206,22 @@ run_instance() {
     # global EC2_VOLUME_SIZE
     # global EC2_VOLUME_TYPE
     # global EC2_KEY_PAIR
+    # global EC2_SUBNET_ID (optional)
     # global EC2_SECURITY_GROUP
 
     [ -z "$EC2_INSTANCE_TYPE" ] && edie "Unable to launch EC2 instance without provided Instance Type."
     [ -z "$EC2_VOLUME_SIZE" ] && edie "Unable to launch EC2 instance without provided Volume Size."
     [ -z "$EC2_VOLUME_TYPE" ] && edie "Unable to launch EC2 instance without provided Volume Type."
     [ -z "$EC2_KEY_PAIR" ] && edie "Unable to launch EC2 instance without provided Key Pair."
-    [ -z "$EC2_SECURITY_GROUP" ] && edie "Unable to launch EC2 instance without provided Security Group."
+    [ -n "$EC2_SUBNET_ID" ] && [ -n "$EC2_SECURITY_GROUP" ] && ( echo "$EC2_SECURITY_GROUP" | grep -vq '^sg-') && edie "If Subnet is specified then Group must be an ID (\"sg-XXX\")"
+    [ -z "$EC2_SUBNET_ID" ] && [ -z "$EC2_SECURITY_GROUP" ] && edie "Unable to launch EC2 instance without providing either Subnet ID or Security Group name or ID."
 
     local image_id="$1"
     local shapshot_id="$2"
+    # market is "spot" or omitted
+    local market="$3"
 
-    local device_mapping_file="$(mktemp)"
+    local device_mapping_file="$(mktemp --suffix=.json)"
 
     cat > "$device_mapping_file" <<- END
 [
@@ -241,10 +245,37 @@ run_instance() {
 END
     local opt_args=()
 
+    if [ -n "$EC2_SUBNET_ID" ]; then
+        # VPC
+        local ni_args="DeviceIndex=0,AssociatePublicIpAddress=true,SubnetId=$EC2_SUBNET_ID"
+        if [ -n "$EC2_SECURITY_GROUP" ]; then
+            ni_args+=",Groups=$EC2_SECURITY_GROUP"
+        fi
+        opt_args+=(--network-interfaces $ni_args)
+    else
+        # Possibly Classic
+        opt_args+=(--associate-public-ip-address)
+        if [ -n "$EC2_SECURITY_GROUP" ]; then
+            # If group begins with "sg-" then its an ID rather than a name.
+            if echo "$EC2_SECURITY_GROUP" | grep -q '^sg-'; then
+                opt_args+=(--security-group-ids "$EC2_SECURITY_GROUP")
+            else
+                opt_args+=(--security-groups "$EC2_SECURITY_GROUP")
+            fi
+        fi
+    fi
+
     # unlimited credit specification is only for t2 instances
     # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/t2-unlimited.html
     if echo "$EC2_INSTANCE_TYPE" | grep -q '^t2\.'; then
         opt_args+=(--credit-specification '{"CpuCredits":"unlimited"}')
+    fi
+
+    if [ "x$market" == "xspot" ]; then
+        opt_args+=(--instance-market-options MarketType="spot")
+        opt_args+=(--query "Instances[0].SpotInstanceRequestId")
+    else
+        opt_args+=(--query "Instances[0].InstanceId")
     fi
 
     eexec -p aws ec2 run-instances \
@@ -252,73 +283,13 @@ END
         --image-id "$image_id" \
         --instance-type "$EC2_INSTANCE_TYPE" \
         --key-name "$EC2_KEY_PAIR" \
-        --security-groups "$EC2_SECURITY_GROUP" \
         --block-device-mappings "file://$device_mapping_file" \
         ${opt_args[*]} \
-        --query 'Instances[0].InstanceId' \
         --output text
 
     local result=$?
 
     rm "$device_mapping_file"
-
-    return $result
-}
-
-run_spot_instance() {
-    # global EC2_INSTANCE_TYPE
-    # global EC2_VOLUME_SIZE
-    # global EC2_VOLUME_TYPE
-    # global EC2_KEY_PAIR
-    # global EC2_SECURITY_GROUP
-
-    [ -z "$EC2_INSTANCE_TYPE" ] && edie "Unable to launch EC2 instance without provided Instance Type."
-    [ -z "$EC2_VOLUME_SIZE" ] && edie "Unable to launch EC2 instance without provided Volume Size."
-    [ -z "$EC2_VOLUME_TYPE" ] && edie "Unable to launch EC2 instance without provided Volume Type."
-    [ -z "$EC2_KEY_PAIR" ] && edie "Unable to launch EC2 instance without provided Key Pair."
-    [ -z "$EC2_SECURITY_GROUP" ] && edie "Unable to launch EC2 instance without provided Security Group."
-
-    local image_id="$1"
-    local shapshot_id="$2"
-
-    local spot_specification_file="$(mktemp)"
-
-    cat > "$spot_specification_file" <<- END
-{
-    "SecurityGroups": [ "$EC2_SECURITY_GROUP" ],
-    "BlockDeviceMappings": [
-        {
-            "DeviceName": "/dev/xvda",
-            "Ebs": {
-                "DeleteOnTermination": true,
-                "SnapshotId": "$shapshot_id",
-                "VolumeSize": $EC2_VOLUME_SIZE,
-                "VolumeType": "$EC2_VOLUME_TYPE"
-            }
-        },{
-            "DeviceName": "/dev/xvdb",
-            "Ebs": {
-                "DeleteOnTermination": $(eon "$KEEP_BOOTSTRAP_DISK" && echo false || echo true),
-                "VolumeSize": $EC2_VOLUME_SIZE,
-                "VolumeType": "$EC2_VOLUME_TYPE"
-            }
-        }
-    ],
-    "ImageId": "$image_id",
-    "InstanceType": "$EC2_INSTANCE_TYPE",
-    "KeyName": "$EC2_KEY_PAIR"
-}
-END
-
-    eexec -p aws ec2 request-spot-instances \
-        --region "$AWS_REGION" \
-        --launch-specification "file://$spot_specification_file" \
-        --query 'SpotInstanceRequests[0].SpotInstanceRequestId' \
-        --output text
-
-    local result=$?
-
-    rm "$spot_specification_file"
 
     return $result
 }
