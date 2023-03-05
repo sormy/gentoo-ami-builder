@@ -209,15 +209,15 @@ with EC2 hardware (as of 2022-02-13):
 | amd64-musl-hardened                      | default | amd64 | :x:        | v1.1.0 on 2020-10-14 |
 | amd64-nomultilib-openrc                  | default | amd64 | :ok:       | v1.1.0 on 2020-10-14 |
 | amd64-nomultilib-systemd                 | default | amd64 | :question: |                      |
-| amd64-openrc                             | default | amd64 | :ok:       | v1.1.6+on 2023-03-03 |
-| amd64-systemd                            | default | amd64 | :ok:       | v1.1.6+on 2023-03-03 |
+| amd64-openrc                             | default | amd64 | :ok:       | v1.1.7 on 2023-03-03 |
+| amd64-systemd                            | default | amd64 | :ok:       | v1.1.7 on 2023-03-03 |
 | arm64                                    | default | arm64 | :question: |                      |
 | arm64-desktop-openrc                     | default | arm64 | :question: |                      |
 | arm64-desktop-systemd                    | default | arm64 | :question: |                      |
 | arm64-musl                               | default | arm64 | :question: |                      |
 | arm64-musl-hardened                      | default | arm64 | :question: |                      |
-| arm64-openrc                             | default | arm64 | :ok:       | v1.1.6+on 2023-03-03 |
-| arm64-systemd                            | default | arm64 | :ok:       | v1.1.6+on 2023-03-03 |
+| arm64-openrc                             | default | arm64 | :ok:       | v1.1.7 on 2023-03-03 |
+| arm64-systemd                            | default | arm64 | :ok:       | v1.1.7 on 2023-03-03 |
 | i486-openrc                              | default | x86   | :x:        |                      |
 | i686-hardened-openrc                     | default | x86   | :x:        |                      |
 | i686-musl                                | default | x86   | :x:        |                      |

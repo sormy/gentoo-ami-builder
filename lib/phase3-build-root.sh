@@ -157,11 +157,6 @@ KERNEL_CONFIG="$KERNEL_CONFIG.bootstrap"
 
 einfo "Installing kernel sources..."
 
-# ena <= 2.6.1 is incompatible with fresh kernels, temporarily mask >=5.15 kernels
-# mkdir -p /etc/portage/package.mask
-# echo "# masked due to ena <= 2.6.1 being incompatible with kernels >= 5.15" > /etc/portage/package.mask/kernel
-# echo ">=sys-kernel/gentoo-sources-5.15.0" >> /etc/portage/package.mask/kernel
-
 eexec emerge $EMERGE_OPTS "sys-kernel/gentoo-sources"
 eexec ln -sfnv "$(find /usr/src -maxdepth 1 -type d -iname 'linux-*' | head -n 1)" /usr/src/linux
 
@@ -199,8 +194,6 @@ END
 else
     echo "ena" > /etc/modules-load.d/ena.conf
 fi
-
-eoutdent
 
 ################################################################################
 

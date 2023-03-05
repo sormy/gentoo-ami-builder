@@ -21,7 +21,7 @@ source "$SCRIPT_DIR/lib/distfiles.sh"
 
 APP_NAME="gentoo-ami-builder"
 APP_DESCRIPTION="Gentoo AMI Builder"
-APP_VERSION="1.1.6"
+APP_VERSION="1.1.7"
 
 # AWS region.
 AWS_REGION="${AWS_DEFAULT_REGION:-us-east-1}"
