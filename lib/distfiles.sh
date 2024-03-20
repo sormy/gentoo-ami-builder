@@ -44,11 +44,6 @@ download_distfile_safe() {
         exit 1
     fi
 
-    einfo "Verifying GPG signature..."
+    gpg_verify "$file.DIGESTS"
 
-    eexec gpg --keyserver hkps://keys.gentoo.org \
-        --recv-keys $GENTOO_GPG_KEYS
-
-    eexec gpg --verify "$file.DIGESTS" \
-        || edie "GPG signature verification failed."
 }
