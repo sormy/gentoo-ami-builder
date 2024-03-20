@@ -88,6 +88,7 @@ $(
         eexec \
         eqexec \
         find_device \
+        gpg_verify \
         append_disk_part \
         find_disk1 \
         find_disk2 \

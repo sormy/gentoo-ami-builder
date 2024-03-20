@@ -18,6 +18,8 @@ source "$SCRIPT_DIR/lib/elib.sh"
 source "$SCRIPT_DIR/lib/disk.sh"
 # shellcheck source=lib/distfiles.sh
 source "$SCRIPT_DIR/lib/distfiles.sh"
+# shellcheck source=lib/gpg-verify.sh
+source "$SCRIPT_DIR/lib/gpg-verify.sh"
 
 APP_NAME="gentoo-ami-builder"
 APP_DESCRIPTION="Gentoo AMI Builder"

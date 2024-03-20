@@ -93,8 +93,16 @@ einfo "Installing stage3..."
 
 eindent
 
-STAGE3_PATH_URL="$GENTOO_MIRROR/releases/$GENTOO_ARCH/autobuilds/latest-stage3-$GENTOO_STAGE3.txt"
-STAGE3_PATH="$(curl -s "$STAGE3_PATH_URL" | grep -v "^#" | cut -d" " -f1)"
+LATEST_STAGE3="latest-stage3-$GENTOO_STAGE3.txt"
+STAGE3_PATH_URL="$GENTOO_MIRROR/releases/$GENTOO_ARCH/autobuilds/$LATEST_STAGE3"
+STAGE3_PATH="$(curl -s -o $LATEST_STAGE3 "$STAGE3_PATH_URL")"
+test -s $LATEST_STAGE3 || edie "Fetching '$STAGE3_PATH_URL' failed"
+
+# N.B. are there any latest-stage3 files that are _not_ signed any more?
+gpg_verify $LATEST_STAGE3
+STAGE3_PATH="$(gpg -o - -d $LATEST_STAGE3 2>/dev/null | grep "^[0-9]" | cut -d" " -f1)"
+test -z "$STAGE3_PATH" && edie "Could not extract a valid path from '$STAGE3_PATH_URL'"
+
 STAGE3_URL="$GENTOO_MIRROR/releases/$GENTOO_ARCH/autobuilds/$STAGE3_PATH"
 STAGE3_FILE="$(basename "$STAGE3_URL")"
 
